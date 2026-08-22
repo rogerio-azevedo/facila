@@ -7,7 +7,14 @@ description: Convenções do ERP Facila (Next 16, DAL, Auth.js, Drizzle, multi-c
 
 ## Stack
 
-Next 16+ · React 19+ · TypeScript · Tailwind 4 · shadcn/ui · PostgreSQL (Neon) · Drizzle · Zod · Auth.js · Zustand (UI only)
+Next 16+ · React 19+ · TypeScript · Tailwind 4 · shadcn/ui · PostgreSQL (Neon) · Drizzle · Zod · Auth.js · Zustand (estado global de UI)
+
+## Gerenciamento de pacotes
+
+- Use **exclusivamente pnpm** para instalar dependências e executar scripts.
+- `pnpm-lock.yaml` é o único lockfile do projeto; não criar ou manter `package-lock.json`, `yarn.lock` ou `bun.lock`.
+- Exemplos: `pnpm install`, `pnpm add <pacote>`, `pnpm add -D <pacote>` e `pnpm <script>`.
+- Não usar `npm`, `npx`, `yarn` ou `bun`. Para CLIs temporárias, usar `pnpm dlx`.
 
 ## Skill complementar (obrigatória na UI)
 
@@ -48,7 +55,7 @@ Módulos futuros: `src/app/contracts/`, `src/app/customers/` — cada um com `pa
 | Backend (DAL, auth, db) | `src/server/` — sempre `import "server-only"` |
 | Schemas Zod | `src/schemas/` |
 | UI shadcn | `src/components/ui/` |
-| Estado de UI | `src/stores/` — **nunca** dados de negócio |
+| Estado global/compartilhado de UI | `src/stores/` — usar Zustand; **nunca** dados de negócio |
 | Módulo de domínio | `src/modules/<nome>/` |
 
 ## Regras de arquitetura
@@ -85,13 +92,13 @@ getCurrentContext() // src/server/dal/context.ts
 Fluxo ao alterar schema:
 
 1. Editar `src/server/db/schema/`
-2. `npm run db:generate` — gera SQL em `drizzle/`
+2. `pnpm db:generate` — gera SQL em `drizzle/`
 3. Revisar o `.sql` gerado
-4. `npm run db:migrate` — aplica no Neon
+4. `pnpm db:migrate` — aplica no Neon
 
 Scripts: `db:generate` · `db:migrate` · `db:studio`
 
-Se o banco já existia antes das migrations (ex.: criado com push), rodar **uma vez**: `npm run db:baseline`.
+Se o banco já existia antes das migrations (ex.: criado com push), rodar **uma vez**: `pnpm db:baseline`.
 
 Commitar sempre `drizzle/` junto com mudanças de schema.
 

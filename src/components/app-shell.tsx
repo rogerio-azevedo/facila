@@ -1,106 +1,111 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { logoutAction } from "@/actions/auth";
-import { stopActAsClientAction } from "@/actions/clients";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useSidebarStore } from "@/stores/sidebar";
+import { AppSidebar, getNavigationItem } from "@/components/app-sidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  SidebarStoreProvider,
+  useSidebarStore,
+} from "@/stores/sidebar-provider";
+
+export type AppShellUser = {
+  name: string;
+  email: string;
+  image?: string | null;
+};
+
+export type AppShellContext =
+  | {
+      kind: "client";
+      label: string;
+      isActingAs: boolean;
+    }
+  | {
+      kind: "platform";
+      label: "Plataforma";
+      isActingAs: false;
+    };
 
 type AppShellProps = {
   children: React.ReactNode;
-  userName: string;
-  userEmail: string;
-  platformRole: "user" | "super_admin";
-  isActingAs: boolean;
-  clientName?: string;
+  context: AppShellContext;
+  defaultOpen: boolean;
+  user: AppShellUser;
 };
 
-const navItems = [{ href: "/dashboard", label: "Dashboard" }];
-
-export function AppShell({
-  children,
-  userName,
-  userEmail,
-  platformRole,
-  isActingAs,
-  clientName,
-}: AppShellProps) {
+function AppHeader({ context }: { context: AppShellContext }) {
   const pathname = usePathname();
-  const { isOpen, toggle } = useSidebarStore();
+  const { isMobile, open, openMobile } = useSidebar();
+  const activeItem = getNavigationItem(context.kind, pathname);
+  const isActingAs = context.kind === "client" && context.isActingAs;
+  const isOpen = isMobile ? openMobile : open;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside
-        className={cn(
-          "border-r bg-card transition-all duration-200",
-          isOpen ? "w-64" : "w-16",
-        )}
-      >
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          {isOpen ? (
-            <span className="font-semibold">Facila</span>
-          ) : (
-            <span className="font-semibold">F</span>
-          )}
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Alternar menu">
-            {isOpen ? "←" : "→"}
-          </Button>
-        </div>
-        <nav className="space-y-1 p-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "block rounded-md px-3 py-2 text-sm hover:bg-accent",
-                pathname === item.href && "bg-accent font-medium",
-              )}
-            >
-              {isOpen ? item.label : item.label[0]}
-            </Link>
-          ))}
-          {platformRole === "super_admin" && !isActingAs && (
-            <Link
-              href="/platform/clients"
-              className={cn(
-                "block rounded-md px-3 py-2 text-sm hover:bg-accent",
-                pathname.startsWith("/platform") && "bg-accent font-medium",
-              )}
-            >
-              {isOpen ? "Plataforma" : "P"}
-            </Link>
-          )}
-        </nav>
-      </aside>
-
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b px-6">
-          <div>
-            <p className="text-sm font-medium">{userName}</p>
-            <p className="text-xs text-muted-foreground">
-              {clientName ? `${clientName}${isActingAs ? " (suporte)" : ""}` : userEmail}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isActingAs && (
-              <form action={stopActAsClientAction}>
-                <Button variant="outline" size="sm" type="submit">
-                  Sair do modo suporte
-                </Button>
-              </form>
-            )}
-            <form action={logoutAction}>
-              <Button variant="outline" size="sm" type="submit">
-                Sair
-              </Button>
-            </form>
-          </div>
-        </header>
-        <main className="flex-1 p-6">{children}</main>
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur-sm md:px-5">
+      <SidebarTrigger
+        aria-label={isOpen ? "Recolher menu" : "Expandir menu"}
+        aria-expanded={isOpen}
+        title={isOpen ? "Recolher menu" : "Expandir menu"}
+        className="size-9"
+      />
+      <Separator orientation="vertical" className="h-5" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {activeItem?.label ?? "Facila"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{context.label}</p>
       </div>
-    </div>
+      {isActingAs ? (
+        <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+          <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+          Suporte
+        </div>
+      ) : null}
+    </header>
+  );
+}
+
+function AppShellContent({
+  children,
+  context,
+  user,
+}: Omit<AppShellProps, "defaultOpen">) {
+  const open = useSidebarStore((state) => state.isOpen);
+  const setOpen = useSidebarStore((state) => state.setOpen);
+
+  return (
+    <SidebarProvider
+      open={open}
+      onOpenChange={setOpen}
+      style={
+        {
+          "--sidebar-width": "16.5rem",
+          "--sidebar-width-icon": "4rem",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar context={context} user={user} />
+      <SidebarInset className="min-w-0">
+        <AppHeader context={context} />
+        <div className="flex-1 overflow-x-hidden p-4 md:p-6 lg:p-8">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+export function AppShell({ children, context, defaultOpen, user }: AppShellProps) {
+  return (
+    <SidebarStoreProvider defaultOpen={defaultOpen}>
+      <AppShellContent context={context} user={user}>
+        {children}
+      </AppShellContent>
+    </SidebarStoreProvider>
   );
 }

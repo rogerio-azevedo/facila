@@ -1,12 +1,14 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-preference";
 import { auth } from "@/server/auth";
 import { getClientById } from "@/server/dal/clients";
 import { getCurrentContext } from "@/server/dal/context";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   if (!session?.user) {
     redirect("/login");
   }
@@ -25,11 +27,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AppShell
-      userName={session.user.name ?? "Usuário"}
-      userEmail={session.user.email ?? ""}
-      platformRole={session.user.platformRole}
-      isActingAs={session.user.isActingAs}
-      clientName={client?.name}
+      context={{
+        kind: "client",
+        label: client?.name ?? "Área do cliente",
+        isActingAs: session.user.isActingAs,
+      }}
+      defaultOpen={getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value)}
+      user={{
+        name: session.user.name ?? "Usuário",
+        email: session.user.email ?? "",
+        image: session.user.image,
+      }}
     >
       {children}
     </AppShell>

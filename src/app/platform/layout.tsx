@@ -1,12 +1,12 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { logoutAction } from "@/actions/auth";
+import { AppShell } from "@/components/app-shell";
+import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-preference";
 import { auth } from "@/server/auth";
-import { Button } from "@/components/ui/button";
 
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
 
   if (!session?.user) {
     redirect("/login");
@@ -17,21 +17,16 @@ export default async function PlatformLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex h-16 items-center justify-between border-b px-6">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold">Facila Plataforma</span>
-          <Link href="/platform/clients" className="text-sm text-muted-foreground hover:text-foreground">
-            Clientes
-          </Link>
-        </div>
-        <form action={logoutAction}>
-          <Button variant="outline" size="sm" type="submit">
-            Sair
-          </Button>
-        </form>
-      </header>
-      <main className="p-6">{children}</main>
-    </div>
+    <AppShell
+      context={{ kind: "platform", label: "Plataforma", isActingAs: false }}
+      defaultOpen={getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value)}
+      user={{
+        name: session.user.name ?? "Super admin",
+        email: session.user.email ?? "",
+        image: session.user.image,
+      }}
+    >
+      {children}
+    </AppShell>
   );
 }
