@@ -17,7 +17,7 @@ export const contracts = pgTable('contracts', {
 
 Sempre `clientId` + índice.
 
-Depois: `npm run db:generate` → revisar SQL → `npm run db:migrate`.
+Depois: `pnpm db:generate` → revisar SQL → `pnpm db:migrate`.
 
 ## 2. Zod
 

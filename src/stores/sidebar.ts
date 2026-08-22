@@ -1,19 +1,36 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createStore } from "zustand/vanilla";
 
-type SidebarState = {
+import { persistSidebarPreference } from "@/lib/sidebar-preference";
+
+export type SidebarState = {
   isOpen: boolean;
-  toggle: () => void;
-  setOpen: (open: boolean) => void;
 };
 
-export const useSidebarStore = create<SidebarState>()(
-  persist(
-    (set) => ({
-      isOpen: true,
-      toggle: () => set((state) => ({ isOpen: !state.isOpen })),
-      setOpen: (open) => set({ isOpen: open }),
-    }),
-    { name: "facila-sidebar" },
-  ),
-);
+export type SidebarActions = {
+  setOpen: (open: boolean) => void;
+  toggle: () => void;
+};
+
+export type SidebarStore = SidebarState & SidebarActions;
+export type SidebarStoreApi = ReturnType<typeof createSidebarStore>;
+
+const defaultInitialState: SidebarState = {
+  isOpen: true,
+};
+
+export function createSidebarStore(
+  initialState: SidebarState = defaultInitialState,
+) {
+  return createStore<SidebarStore>()((set, get) => {
+    function updateOpen(isOpen: boolean) {
+      set({ isOpen });
+      persistSidebarPreference(isOpen);
+    }
+
+    return {
+      ...initialState,
+      setOpen: updateOpen,
+      toggle: () => updateOpen(!get().isOpen),
+    };
+  });
+}

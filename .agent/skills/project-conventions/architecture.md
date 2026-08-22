@@ -47,13 +47,15 @@ Use **apenas** para:
 
 **Não** use para CRUD interno da aplicação.
 
-### Zustand
+### Estado de interface
 
-Somente estado de interface:
+Use Zustand como padrão para estado global de UI compartilhado entre áreas independentes da árvore. Em aplicações Next com SSR, crie a store por instância do provider e inicialize-a com os dados recebidos do servidor; não use uma singleton compartilhada entre requisições.
+
+Estado local e Context continuam permitidos para comportamento efêmero e interno de componentes. Stores Zustand são somente para estado de interface:
 
 - Sidebar aberta/fechada
 - Preferências de colunas de tabela
-- Modais locais
+- Coordenação global de modais
 
 **Proibido**: cache de entidades, sessão, `clientId`, listas de negócio.
 
