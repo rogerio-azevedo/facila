@@ -1,0 +1,170 @@
+import "server-only";
+
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+
+import { db } from "@/server/db";
+import { accounts, clientMembers, users } from "@/server/db/schema";
+import { loginSchema } from "@/schemas/auth";
+import { resolveSessionClientContext } from "@/server/dal/session";
+
+import { authConfig } from "./auth.config";
+
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+  unstable_update: updateSession,
+} = NextAuth({
+  ...authConfig,
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+  }),
+  providers: [
+    Google({
+      allowDangerousEmailAccountLinking: true,
+    }),
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const parsed = loginSchema.safeParse(credentials);
+        if (!parsed.success) {
+          return null;
+        }
+
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, parsed.data.email),
+        });
+
+        if (!user?.passwordHash) {
+          return null;
+        }
+
+        const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        if (!valid) {
+          return null;
+        }
+
+        const clientContext = await resolveSessionClientContext(user);
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          platformRole: user.platformRole,
+          ...clientContext,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async signIn({ user, account }) {
+      if (!user.email) {
+        return false;
+      }
+
+      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
+      if (superAdminEmail && user.email.toLowerCase() === superAdminEmail) {
+        await db
+          .update(users)
+          .set({ platformRole: "super_admin" })
+          .where(eq(users.email, user.email));
+      }
+
+      if (account?.provider === "google") {
+        const existing = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+        });
+
+        if (!existing) {
+          return "/register?error=google-new-user";
+        }
+
+        if (existing.platformRole !== "super_admin") {
+          const memberships = await db.query.clientMembers.findMany({
+            where: eq(clientMembers.userId, existing.id),
+          });
+
+          if (memberships.length === 0) {
+            return "/register?error=no-client";
+          }
+        }
+      }
+
+      return true;
+    },
+    async jwt({ token, user, trigger, session }) {
+      if (user?.id) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, user.id),
+        });
+
+        if (dbUser) {
+          const clientContext = await resolveSessionClientContext(dbUser, {
+            activeClientId: user.activeClientId,
+            isActingAs: user.isActingAs,
+          });
+
+          token.userId = dbUser.id;
+          token.platformRole = dbUser.platformRole;
+          token.activeClientId = clientContext.activeClientId;
+          token.clientRole = clientContext.clientRole;
+          token.isActingAs = clientContext.isActingAs;
+        }
+      } else if (token.userId && trigger !== "update") {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, token.userId as string),
+        });
+
+        if (dbUser) {
+          token.platformRole = dbUser.platformRole;
+          const clientContext = await resolveSessionClientContext(dbUser, {
+            activeClientId: token.activeClientId as string | null | undefined,
+            isActingAs: Boolean(token.isActingAs),
+          });
+          token.activeClientId = clientContext.activeClientId;
+          token.clientRole = clientContext.clientRole;
+          token.isActingAs = clientContext.isActingAs;
+        }
+      }
+
+      if (trigger === "update" && session?.user) {
+        if ("activeClientId" in session.user) {
+          token.activeClientId = session.user.activeClientId ?? null;
+        }
+        if ("clientRole" in session.user) {
+          token.clientRole = session.user.clientRole ?? null;
+        }
+        if ("isActingAs" in session.user) {
+          token.isActingAs = session.user.isActingAs ?? false;
+        }
+      }
+
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.userId as string;
+        session.user.platformRole = (token.platformRole as "user" | "super_admin") ?? "user";
+        session.user.activeClientId = (token.activeClientId as string | null) ?? null;
+        session.user.clientRole = (token.clientRole as "admin" | "member" | null) ?? null;
+        session.user.isActingAs = Boolean(token.isActingAs);
+      }
+
+      return session;
+    },
+  },
+});
+
+export type AppSession = Awaited<ReturnType<typeof auth>>;
