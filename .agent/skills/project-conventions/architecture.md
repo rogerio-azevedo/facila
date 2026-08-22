@@ -23,16 +23,23 @@ Drizzle + Neon
 ### Server Actions
 
 - Formulários, botões de mutação
-- Arquivo com `'use server'` no topo
+- Arquivo com `'use server'` no topo — **um arquivo por entidade** (`src/actions/<entidade>.ts`)
 - **Finas**: parse → DAL → revalidate → retorno mínimo
+- **Orquestração multi-entidade**: a action abre a transaction e chama um DAL por tabela; nunca um DAL escrevendo em outra entidade
 
 ```ts
 'use server'
-export async function createCompanyAction(input: unknown) {
-  const parsed = createCompanySchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.flatten() }
-  await createCompany(parsed.data) // DAL
-  revalidatePath('/platform/companies')
+export async function createClientAction(input: unknown) {
+  const clientParsed = clientSchema.safeParse(input.client)
+  const addressParsed = addressSchema.safeParse(input.address)
+  if (!clientParsed.success || !addressParsed.success) {
+    return { error: 'validation' }
+  }
+  await db.transaction(async (tx) => {
+    const client = await createClient(tx, clientParsed.data)      // dal/clients.ts
+    await createAddress(tx, { ...addressParsed.data, clientOwnerId: client.id }) // dal/addresses.ts
+  })
+  revalidatePath('/clients')
   return { success: true }
 }
 ```
@@ -59,17 +66,20 @@ Estado local e Context continuam permitidos para comportamento efêmero e intern
 
 **Proibido**: cache de entidades, sessão, `companyId`, listas de negócio.
 
-## Módulos de domínio
+## Entidades de negócio (padrão oficial)
 
 ```
-src/modules/<nome>/
-  schema.ts      # Drizzle (se específico do módulo)
-  dal.ts         # ou dal/*.ts
-  actions.ts     # re-export ou actions locais
-  components/    # UI do módulo
+src/server/db/schema/<entidade>.ts
+src/schemas/<entidade>.ts
+src/server/dal/<entidade>.ts
+src/actions/<entidade>.ts
 ```
 
-Módulos compartilham `getCurrentContext()` e policies globais.
+UI de feature em `src/app/<rota>/` e `src/components/<feature>/`. **Não** usar `src/modules/` para entidades de negócio — evita dois padrões paralelos.
+
+## Módulos de domínio (`src/modules/`)
+
+Reservado para **composição de UI** ou helpers de feature sem tabela própria. Se a feature tem `pgTable`, os quatro arquivos acima são obrigatórios na estrutura flat.
 
 ## Cache e revalidação
 

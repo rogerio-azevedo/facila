@@ -6,6 +6,7 @@ import {
   LayoutDashboardIcon,
   LogOutIcon,
   ShieldCheckIcon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -45,6 +46,11 @@ const navigation = {
       href: "/dashboard",
       label: "Dashboard",
       icon: LayoutDashboardIcon,
+    },
+    {
+      href: "/clients",
+      label: "Clientes",
+      icon: UsersIcon,
     },
   ],
   platform: [

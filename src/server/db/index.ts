@@ -14,3 +14,5 @@ if (!connectionString) {
 const client = postgres(connectionString, { prepare: false });
 
 export const db = drizzle(client, { schema });
+
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

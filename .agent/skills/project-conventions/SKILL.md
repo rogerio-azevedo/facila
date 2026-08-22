@@ -59,6 +59,27 @@ Módulos futuros: `src/app/clients/`, `src/app/contracts/` — cada um com `page
 | Estado global/compartilhado de UI | `src/stores/` — usar Zustand; **nunca** dados de negócio |
 | Módulo de domínio | `src/modules/<nome>/` |
 
+## 1:1 entidade → arquivos (critério absoluto)
+
+Toda tabela de negócio (`pgTable`) **obrigatoriamente** tem os quatro arquivos com o **mesmo nome**, na estrutura flat do repo:
+
+```
+src/server/db/schema/<entidade>.ts   # Drizzle
+src/schemas/<entidade>.ts            # Zod
+src/server/dal/<entidade>.ts         # queries/mutações SÓ desta tabela
+src/actions/<entidade>.ts            # Server Actions desta entidade
+```
+
+Regras **não negociáveis**:
+
+1. **DAL de uma entidade não escreve em outra tabela.** `dal/clients.ts` não faz `insert` em `addresses`.
+2. **Orquestração multi-entidade é da Action** (ex.: `createClientAction` abre `db.transaction` e chama `createClient` + `createAddress`).
+3. **Zod descreve só a entidade.** Formulários compostos validam `{ client, address }` com schemas separados — sem "super schema" de duas tabelas.
+4. **RSC compõe leituras.** Page chama `getClientById` + `getPrimaryAddressForClient` em paralelo — sem join escondido no DAL de outra entidade.
+5. **Exceções**: `context.ts`, `session.ts`, `policies/`, Auth.js (`schema/auth.ts`). Junction legado (`company_members` em `companies`) permanece até refatoração explícita.
+
+**Proibido**: entidade nova "de carona" no arquivo de outra; DAL que mistura tabelas; `src/modules/` como caminho de entidades de negócio (dois padrões).
+
 ## Regras de arquitetura
 
 1. **Ler dados**: Server Component → DAL direto. Não `fetch` em `/api` próprio.
@@ -76,12 +97,13 @@ getCurrentContext() // src/server/dal/context.ts
 // admin | member → companyId da sessão
 ```
 
-## Checklist rápido (nova feature)
+## Checklist rápido (nova entidade de negócio)
 
-- [ ] Schema Drizzle com `companyId` se for dado de tenant ou CRM
-- [ ] Zod em `src/schemas/`
-- [ ] DAL em `src/server/dal/` com auth + authz
-- [ ] Action fina em `src/actions/`
+- [ ] `src/server/db/schema/<entidade>.ts` (Drizzle)
+- [ ] `src/schemas/<entidade>.ts` (Zod)
+- [ ] `src/server/dal/<entidade>.ts` (auth + authz; só esta tabela)
+- [ ] `src/actions/<entidade>.ts` (orquestra se precisar de outras entidades)
+- [ ] Schema com `companyId` se for dado de tenant ou CRM
 - [ ] UI em RSC quando possível; `"use client"` só para interatividade
 - [ ] Aplicar [vercel-react-best-practices](../../../.agents/skills/vercel-react-best-practices/SKILL.md) (sem waterfalls, sem barrel imports, DTO mínimo no client)
 - [ ] Policies em `src/server/policies/` para `can(ctx, action)`
