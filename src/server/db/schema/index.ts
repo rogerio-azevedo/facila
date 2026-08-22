@@ -3,3 +3,4 @@ export * from "./companies";
 export * from "./company-members";
 export * from "./clients";
 export * from "./addresses";
+export * from "./contracts";

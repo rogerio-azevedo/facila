@@ -5,7 +5,9 @@ export type PolicyAction =
   | "platform:act-as"
   | "companies:manage"
   | "clients:manage"
-  | "clients:read";
+  | "clients:read"
+  | "contracts:manage"
+  | "contracts:read";
 
 export function can(ctx: AppContext, action: PolicyAction): boolean {
   switch (action) {
@@ -23,6 +25,8 @@ export function can(ctx: AppContext, action: PolicyAction): boolean {
 
     case "clients:manage":
     case "clients:read":
+    case "contracts:manage":
+    case "contracts:read":
       return ctx.kind === "company";
 
     default:

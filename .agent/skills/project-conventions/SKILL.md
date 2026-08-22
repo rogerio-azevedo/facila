@@ -114,6 +114,7 @@ Consulte antes de criar ou mover arquivos. Cada linha = quatro arquivos com o **
 | `company_members` | `db/schema/company-members.ts` | `schemas/company-members.ts` | `dal/company-members.ts` | (orquestrado por auth/companies) |
 | `clients` | `db/schema/clients.ts` | `schemas/clients.ts` | `dal/clients.ts` | `actions/clients.ts` |
 | `addresses` | `db/schema/addresses.ts` | `schemas/addresses.ts` | `dal/addresses.ts` | `actions/addresses.ts` |
+| `contracts` | `db/schema/contracts.ts` | `schemas/contracts.ts` | `dal/contracts.ts` | `actions/contracts.ts` |
 
 Login (sem tabela): `schemas/auth.ts` · Infra: `dal/context.ts`, `dal/session.ts`
 

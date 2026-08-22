@@ -11,6 +11,10 @@ export function buildClientsListHref(params: ClientListQuery): string {
     search.set("personType", params.personType);
   }
 
+  if (params.onlyWithActiveContract === false) {
+    search.set("onlyWithActiveContract", "false");
+  }
+
   if (params.page > 1) {
     search.set("page", String(params.page));
   }

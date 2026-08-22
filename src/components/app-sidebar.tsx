@@ -3,6 +3,7 @@
 import {
   Building2Icon,
   ChevronUpIcon,
+  FileTextIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   ShieldCheckIcon,
@@ -51,6 +52,11 @@ const navigation = {
       href: "/clients",
       label: "Clientes",
       icon: UsersIcon,
+    },
+    {
+      href: "/contracts",
+      label: "Contratos",
+      icon: FileTextIcon,
     },
   ],
   platform: [

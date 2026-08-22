@@ -96,6 +96,10 @@ export const clientListQuerySchema = z.object({
     .optional()
     .transform((value) => value?.trim() ?? ""),
   personType: z.enum(["individual", "organization"]).optional(),
+  onlyWithActiveContract: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value !== "false"),
   page: z.coerce.number().int().min(1).catch(1),
   pageSize: z.coerce
     .number()
@@ -121,6 +125,7 @@ export function parseClientListQuery(
   return clientListQuerySchema.parse({
     q: get("q"),
     personType: get("personType"),
+    onlyWithActiveContract: get("onlyWithActiveContract"),
     page: get("page"),
     pageSize: get("pageSize"),
   });

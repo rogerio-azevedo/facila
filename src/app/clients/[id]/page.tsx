@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ClientContractsSection } from "@/components/contracts/client-contracts-section";
 import { ClientForm } from "@/components/clients/client-form";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { getPrimaryAddressForClient } from "@/server/dal/addresses";
 import { getClientById } from "@/server/dal/clients";
+import { listContractsByClientId } from "@/server/dal/contracts";
 
 type EditClientPageProps = {
   params: Promise<{ id: string }>;
@@ -13,9 +15,10 @@ type EditClientPageProps = {
 
 export default async function EditClientPage({ params }: EditClientPageProps) {
   const { id } = await params;
-  const [client, address] = await Promise.all([
+  const [client, address, contracts] = await Promise.all([
     getClientById(id),
     getPrimaryAddressForClient(id),
+    listContractsByClientId(id),
   ]);
 
   if (!client) {
@@ -26,13 +29,14 @@ export default async function EditClientPage({ params }: EditClientPageProps) {
     <div className="space-y-4">
       <PageHeader
         title={client.name}
-        description="Editar dados fiscais e endereço."
+        description="Editar dados fiscais, endereço e contratos."
         actions={
           <Button variant="outline" asChild>
             <Link href="/clients">Voltar</Link>
           </Button>
         }
       />
+      <ClientContractsSection clientId={client.id} contracts={contracts} />
       <ClientForm
         mode="edit"
         clientId={client.id}

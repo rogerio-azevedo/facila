@@ -1,10 +1,10 @@
 import "server-only";
 
-import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, count, desc, eq, exists, ilike, inArray, or } from "drizzle-orm";
 
 import type { ClientInput, ClientListQuery } from "@/schemas/clients";
 import { db, type DbTransaction } from "@/server/db";
-import { clients } from "@/server/db/schema";
+import { clients, contracts } from "@/server/db/schema";
 import { ForbiddenError, requireCompanyContext } from "@/server/dal/context";
 import { can } from "@/server/policies";
 
@@ -14,6 +14,11 @@ export type ClientListItem = {
   document: string;
   personType: "individual" | "organization";
   phone: string | null;
+};
+
+export type ClientSummary = {
+  id: string;
+  name: string;
 };
 
 export type ClientListResult = {
@@ -44,6 +49,23 @@ function buildListWhere(companyId: string, query: ClientListQuery) {
     } else {
       conditions.push(ilike(clients.name, `%${query.q}%`));
     }
+  }
+
+  if (query.onlyWithActiveContract) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: contracts.id })
+          .from(contracts)
+          .where(
+            and(
+              eq(contracts.clientId, clients.id),
+              eq(contracts.companyId, companyId),
+              eq(contracts.status, "active"),
+            ),
+          ),
+      ),
+    );
   }
 
   return and(...conditions);
@@ -92,6 +114,41 @@ export async function getClientById(clientId: string): Promise<ClientRecord | nu
   });
 
   return row ?? null;
+}
+
+export async function listClientsByIds(clientIds: string[]): Promise<ClientSummary[]> {
+  if (clientIds.length === 0) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "clients:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: clients.id,
+      name: clients.name,
+    })
+    .from(clients)
+    .where(and(eq(clients.companyId, ctx.companyId), inArray(clients.id, clientIds)));
+}
+
+export async function listClientOptions(): Promise<ClientSummary[]> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "clients:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: clients.id,
+      name: clients.name,
+    })
+    .from(clients)
+    .where(eq(clients.companyId, ctx.companyId))
+    .orderBy(clients.name);
 }
 
 export async function createClient(

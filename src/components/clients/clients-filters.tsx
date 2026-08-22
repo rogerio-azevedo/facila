@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -52,30 +53,53 @@ export function ClientsFilters({ query }: ClientsFiltersProps) {
         className="md:max-w-md"
       />
 
-      <Select
-        value={query.personType ?? "all"}
-        onValueChange={(value) => {
-          const personType =
-            value === "all" ? undefined : (value as "individual" | "organization");
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <Select
+          value={query.personType ?? "all"}
+          onValueChange={(value) => {
+            const personType =
+              value === "all" ? undefined : (value as "individual" | "organization");
 
-          router.replace(
-            buildClientsListHref({
-              ...query,
-              personType,
-              page: 1,
-            }),
-          );
-        }}
-      >
-        <SelectTrigger className="w-full md:w-[180px]">
-          <SelectValue placeholder="Tipo" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos os tipos</SelectItem>
-          <SelectItem value="individual">Pessoa física</SelectItem>
-          <SelectItem value="organization">Pessoa jurídica</SelectItem>
-        </SelectContent>
-      </Select>
+            router.replace(
+              buildClientsListHref({
+                ...query,
+                personType,
+                page: 1,
+              }),
+            );
+          }}
+        >
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            <SelectItem value="individual">Pessoa física</SelectItem>
+            <SelectItem value="organization">Pessoa jurídica</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="onlyWithActiveContract"
+            type="checkbox"
+            className="size-4 rounded border"
+            checked={query.onlyWithActiveContract}
+            onChange={(event) => {
+              router.replace(
+                buildClientsListHref({
+                  ...query,
+                  onlyWithActiveContract: event.target.checked,
+                  page: 1,
+                }),
+              );
+            }}
+          />
+          <Label htmlFor="onlyWithActiveContract" className="text-sm font-normal">
+            Somente com contrato ativo
+          </Label>
+        </div>
+      </div>
     </div>
   );
 }
