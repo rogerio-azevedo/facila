@@ -29,6 +29,22 @@ export type ContractListResult = {
 
 export type ContractRecord = typeof contracts.$inferSelect;
 
+export type ActiveContractForBilling = {
+  id: string;
+  clientId: string;
+  name: string;
+  description: string | null;
+  amount: string;
+  dueDay: number;
+  startDate: Date;
+  endDate: Date | null;
+};
+
+export type ContractSummary = {
+  id: string;
+  name: string;
+};
+
 export type ActiveContractStats = {
   clientId: string;
   activeCount: number;
@@ -168,6 +184,94 @@ export async function listActiveContractStatsByClientIds(
     activeCount: Number(row.activeCount),
     monthlyAmount: row.monthlyAmount,
   }));
+}
+
+export async function listActiveContractsForBilling(): Promise<ActiveContractForBilling[]> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "contracts:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: contracts.id,
+      clientId: contracts.clientId,
+      name: contracts.name,
+      description: contracts.description,
+      amount: contracts.amount,
+      dueDay: contracts.dueDay,
+      startDate: contracts.startDate,
+      endDate: contracts.endDate,
+    })
+    .from(contracts)
+    .where(and(eq(contracts.companyId, ctx.companyId), eq(contracts.status, "active")))
+    .orderBy(contracts.name);
+}
+
+export async function listContractOptions(): Promise<ActiveContractForBilling[]> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "contracts:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: contracts.id,
+      clientId: contracts.clientId,
+      name: contracts.name,
+      description: contracts.description,
+      amount: contracts.amount,
+      dueDay: contracts.dueDay,
+      startDate: contracts.startDate,
+      endDate: contracts.endDate,
+    })
+    .from(contracts)
+    .where(eq(contracts.companyId, ctx.companyId))
+    .orderBy(contracts.name);
+}
+
+export async function listContractSummariesByIds(
+  contractIds: string[],
+): Promise<ContractSummary[]> {
+  if (contractIds.length === 0) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "contracts:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: contracts.id,
+      name: contracts.name,
+    })
+    .from(contracts)
+    .where(
+      and(eq(contracts.companyId, ctx.companyId), inArray(contracts.id, contractIds)),
+    );
+}
+
+export async function listContractIdsByNameSearch(query: string): Promise<string[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "contracts:read")) {
+    throw new ForbiddenError();
+  }
+
+  const rows = await db
+    .select({ id: contracts.id })
+    .from(contracts)
+    .where(
+      and(eq(contracts.companyId, ctx.companyId), ilike(contracts.name, `%${trimmed}%`)),
+    );
+
+  return rows.map((row) => row.id);
 }
 
 export async function getContractById(contractId: string): Promise<ContractRecord | null> {

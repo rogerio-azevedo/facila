@@ -7,7 +7,11 @@ export type PolicyAction =
   | "clients:manage"
   | "clients:read"
   | "contracts:manage"
-  | "contracts:read";
+  | "contracts:read"
+  | "accounts-receivable:manage"
+  | "accounts-receivable:read"
+  | "billing-runs:manage"
+  | "billing-runs:read";
 
 export function can(ctx: AppContext, action: PolicyAction): boolean {
   switch (action) {
@@ -27,6 +31,10 @@ export function can(ctx: AppContext, action: PolicyAction): boolean {
     case "clients:read":
     case "contracts:manage":
     case "contracts:read":
+    case "accounts-receivable:manage":
+    case "accounts-receivable:read":
+    case "billing-runs:manage":
+    case "billing-runs:read":
       return ctx.kind === "company";
 
     default:

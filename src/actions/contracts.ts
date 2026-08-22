@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { contractSchema, type ContractFormState } from "@/schemas/contracts";
+import { hasAccountsReceivableForContract } from "@/server/dal/accounts-receivable";
 import {
   deleteContract,
   getContractById,
@@ -81,6 +82,14 @@ export async function deleteContractAction(contractId: string): Promise<Contract
   if (!existing) {
     return {
       errors: { form: ["Contrato não encontrado"] },
+    };
+  }
+
+  if (await hasAccountsReceivableForContract(contractId)) {
+    return {
+      errors: {
+        form: ["Não é possível excluir contrato com contas a receber vinculadas"],
+      },
     };
   }
 

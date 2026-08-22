@@ -115,6 +115,9 @@ Consulte antes de criar ou mover arquivos. Cada linha = quatro arquivos com o **
 | `clients` | `db/schema/clients.ts` | `schemas/clients.ts` | `dal/clients.ts` | `actions/clients.ts` |
 | `addresses` | `db/schema/addresses.ts` | `schemas/addresses.ts` | `dal/addresses.ts` | `actions/addresses.ts` |
 | `contracts` | `db/schema/contracts.ts` | `schemas/contracts.ts` | `dal/contracts.ts` | `actions/contracts.ts` |
+| `accounts_receivable` | `db/schema/accounts-receivable.ts` | `schemas/accounts-receivable.ts` | `dal/accounts-receivable.ts` | `actions/accounts-receivable.ts` |
+| `billing_runs` | `db/schema/billing-runs.ts` | `schemas/billing-runs.ts` | `dal/billing-runs.ts` | `actions/billing-runs.ts` |
+| `billing_run_items` | `db/schema/billing-run-items.ts` | `schemas/billing-run-items.ts` | `dal/billing-run-items.ts` | `actions/billing-run-items.ts` |
 
 Login (sem tabela): `schemas/auth.ts` · Infra: `dal/context.ts`, `dal/session.ts`
 

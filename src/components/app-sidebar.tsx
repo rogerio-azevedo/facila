@@ -3,6 +3,8 @@
 import {
   Building2Icon,
   ChevronUpIcon,
+  LayersIcon,
+  ReceiptIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -57,6 +59,16 @@ const navigation = {
       href: "/contracts",
       label: "Contratos",
       icon: FileTextIcon,
+    },
+    {
+      href: "/accounts-receivable",
+      label: "Contas a receber",
+      icon: ReceiptIcon,
+    },
+    {
+      href: "/billing",
+      label: "Faturamento",
+      icon: LayersIcon,
     },
   ],
   platform: [

@@ -8,5 +8,12 @@ const { auth } = NextAuth(authConfig);
 export const proxy = auth(() => NextResponse.next());
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/platform/:path*", "/clients/:path*", "/contracts/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/platform/:path*",
+    "/clients/:path*",
+    "/contracts/:path*",
+    "/accounts-receivable/:path*",
+    "/billing/:path*",
+  ],
 };
