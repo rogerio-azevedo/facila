@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 
 import { AppSidebar, getNavigationItem } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
@@ -48,14 +47,13 @@ function AppHeader({ context }: { context: AppShellContext }) {
   const isOpen = isMobile ? openMobile : open;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur-sm md:px-5">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-background/95 px-3 backdrop-blur-sm md:px-5">
       <SidebarTrigger
         aria-label={isOpen ? "Recolher menu" : "Expandir menu"}
         aria-expanded={isOpen}
         title={isOpen ? "Recolher menu" : "Expandir menu"}
-        className="size-9"
+        className="size-8"
       />
-      <Separator orientation="vertical" className="h-5" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">
           {activeItem?.label ?? "Facila"}

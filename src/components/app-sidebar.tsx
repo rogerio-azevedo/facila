@@ -28,7 +28,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -95,17 +94,17 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="border-b border-sidebar-border px-2 py-2.5">
+      <SidebarHeader className="h-14 justify-center border-b border-sidebar-border px-2 py-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               size="lg"
               tooltip="Facila"
-              className="h-14 hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:size-11!"
+              className="h-9 hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:size-8!"
             >
               <Link href={homeHref} onClick={closeMobileNavigation}>
-                <span className="hidden size-9 shrink-0 items-center justify-center group-data-[collapsible=icon]:flex">
+                <span className="hidden size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:flex">
                   <Image
                     src="/facila-symbol.svg"
                     alt=""
@@ -114,18 +113,15 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
                     priority
                   />
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5 group-data-[collapsible=icon]:hidden">
+                <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
                   <Image
                     src="/facila.svg"
                     alt="Facila"
                     width={96}
                     height={40}
-                    className="h-8 w-auto self-start"
+                    className="h-8 w-auto"
                     priority
                   />
-                  <span className="truncate text-[11px] font-medium text-sidebar-foreground/60">
-                    {context.label}
-                  </span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -136,7 +132,6 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
       <SidebarContent>
         <nav aria-label="Navegação principal">
           <SidebarGroup className="pt-3">
-            <SidebarGroupLabel>Navegação</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {items.map((item) => {
@@ -149,7 +144,7 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
                         asChild
                         isActive={isActive}
                         tooltip={item.label}
-                        className="h-10 gap-3 px-3 text-[13px] data-active:bg-sidebar-accent data-active:text-sidebar-primary data-active:shadow-[inset_3px_0_0_var(--sidebar-primary)] group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0! group-data-[collapsible=icon]:data-active:shadow-none"
+                        className="h-10 gap-3 px-3 text-[13px] data-active:bg-sidebar-accent data-active:text-sidebar-primary data-active:shadow-[inset_3px_0_0_var(--sidebar-primary)] group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0! group-data-[collapsible=icon]:data-active:shadow-none"
                       >
                         <Link
                           href={item.href}
@@ -184,7 +179,7 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     tooltip="Sair do modo suporte"
-                    className="h-10 text-amber-800 hover:bg-amber-50 hover:text-amber-900 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0!"
+                    className="h-10 text-amber-800 hover:bg-amber-50 hover:text-amber-900 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0!"
                   >
                     <button type="submit">
                       <ShieldCheckIcon aria-hidden="true" />
@@ -207,7 +202,7 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
                 <SidebarMenuButton
                   size="lg"
                   aria-label={`Abrir menu de ${user.name}`}
-                  className="h-12 gap-3 px-2 data-open:bg-sidebar-accent group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+                  className="h-12 gap-3 px-2 data-open:bg-sidebar-accent group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
                 >
                   <Avatar className="size-8 rounded-md" size="default">
                     {user.image ? <AvatarImage src={user.image} alt="" /> : null}
