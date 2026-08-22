@@ -188,6 +188,20 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
           </>
         ) : null}
 
+        <SidebarMenu className="mb-1">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip={context.label}
+              className="h-9 gap-2 px-2 text-xs font-medium text-sidebar-foreground/70 hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0!"
+            >
+              <Building2Icon className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate group-data-[collapsible=icon]:sr-only">
+                {context.label}
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

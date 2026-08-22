@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { requireCompanyContext } from "@/server/dal/context";
 import { getCompanyById } from "@/server/dal/companies";
 
@@ -7,12 +8,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Bem-vindo ao ERP Facila{company ? ` — ${company.name}` : ""}.
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description={`Bem-vindo ao ERP Facila${company ? ` — ${company.name}` : ""}.`}
+      />
       <div className="rounded-lg border p-6">
         <p className="text-sm text-muted-foreground">
           Papel: <span className="font-medium text-foreground">{ctx.role}</span>

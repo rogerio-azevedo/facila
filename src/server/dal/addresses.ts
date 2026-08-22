@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type { AddressInput } from "@/schemas/addresses";
 import { db, type DbTransaction } from "@/server/db";
@@ -10,8 +10,49 @@ import { can } from "@/server/policies";
 
 export type AddressRecord = typeof addresses.$inferSelect;
 
+export type ClientPrimaryAddressSummary = {
+  clientId: string;
+  city: string;
+  state: string;
+};
+
 function dbOrTx(tx?: DbTransaction) {
   return tx ?? db;
+}
+
+export async function listPrimaryAddressesByClientIds(
+  clientIds: string[],
+): Promise<ClientPrimaryAddressSummary[]> {
+  if (clientIds.length === 0) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "clients:read")) {
+    throw new ForbiddenError();
+  }
+
+  const rows = await db
+    .select({
+      clientId: addresses.clientOwnerId,
+      city: addresses.city,
+      state: addresses.state,
+    })
+    .from(addresses)
+    .where(
+      and(
+        eq(addresses.companyId, ctx.companyId),
+        eq(addresses.ownerType, "client"),
+        eq(addresses.isPrimary, true),
+        inArray(addresses.clientOwnerId, clientIds),
+      ),
+    );
+
+  return rows.flatMap((row) =>
+    row.clientId
+      ? [{ clientId: row.clientId, city: row.city, state: row.state }]
+      : [],
+  );
 }
 
 export async function getPrimaryAddressForClient(

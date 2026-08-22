@@ -88,6 +88,44 @@ export const clientSchema = z
 
 export type ClientInput = z.infer<typeof clientSchema>;
 
+const allowedPageSizes = [10, 20, 50] as const;
+
+export const clientListQuerySchema = z.object({
+  q: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() ?? ""),
+  personType: z.enum(["individual", "organization"]).optional(),
+  page: z.coerce.number().int().min(1).catch(1),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .catch(10)
+    .transform((value) =>
+      allowedPageSizes.includes(value as (typeof allowedPageSizes)[number])
+        ? (value as (typeof allowedPageSizes)[number])
+        : 10,
+    ),
+});
+
+export type ClientListQuery = z.infer<typeof clientListQuerySchema>;
+
+export function parseClientListQuery(
+  searchParams: Record<string, string | string[] | undefined>,
+): ClientListQuery {
+  const get = (key: string) => {
+    const value = searchParams[key];
+    return typeof value === "string" ? value : undefined;
+  };
+
+  return clientListQuerySchema.parse({
+    q: get("q"),
+    personType: get("personType"),
+    page: get("page"),
+    pageSize: get("pageSize"),
+  });
+}
+
 export type ClientFormState = {
   errors?: {
     client?: Record<string, string[] | undefined>;

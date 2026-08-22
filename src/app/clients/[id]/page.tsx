@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ClientForm } from "@/components/clients/client-form";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { getPrimaryAddressForClient } from "@/server/dal/addresses";
 import { getClientById } from "@/server/dal/clients";
@@ -23,15 +24,15 @@ export default async function EditClientPage({ params }: EditClientPageProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{client.name}</h1>
-          <p className="text-muted-foreground">Editar dados fiscais e endereço.</p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link href="/clients">Voltar</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={client.name}
+        description="Editar dados fiscais e endereço."
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/clients">Voltar</Link>
+          </Button>
+        }
+      />
       <ClientForm
         mode="edit"
         clientId={client.id}

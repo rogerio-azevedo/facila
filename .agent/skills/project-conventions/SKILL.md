@@ -57,7 +57,28 @@ Módulos futuros: `src/app/clients/`, `src/app/contracts/` — cada um com `page
 | Schemas Zod | `src/schemas/` |
 | UI shadcn | `src/components/ui/` |
 | Estado global/compartilhado de UI | `src/stores/` — usar Zustand; **nunca** dados de negócio |
+| Cabeçalho de página (título/ações) | `src/components/page-header.tsx` — declarado na page, renderizado no `AppShell` |
 | Módulo de domínio | `src/modules/<nome>/` |
+
+## Cabeçalho de página (header único)
+
+Toda página autenticada (dentro do `AppShell`) declara título, descrição e ações com `<PageHeader />`. O `AppHeader` sticky do layout renderiza esse conteúdo — **não** criar segundo cabeçalho (`h1` + botão) no corpo da página.
+
+```tsx
+<PageHeader
+  title="Clientes"
+  description="Cadastro fiscal completo para emissão de notas."
+  actions={<Button asChild><Link href="/clients/new">Novo cliente</Link></Button>}
+/>
+```
+
+Regras:
+
+- **Título de sub-rota** é da página (`Novo cliente`, nome do registro), não o label do módulo na sidebar.
+- **Descrição** é opcional; se omitida, a linha some do header.
+- **Ações** ficam à direita no header (primária ou secundária, ex.: `Voltar`).
+- **Nome da empresa** aparece na sidebar (acima do usuário logado), não no header.
+- Páginas RSC continuam RSC; só `<PageHeader />` é client.
 
 ## 1:1 entidade → arquivos (critério absoluto)
 
@@ -76,9 +97,25 @@ Regras **não negociáveis**:
 2. **Orquestração multi-entidade é da Action** (ex.: `createClientAction` abre `db.transaction` e chama `createClient` + `createAddress`).
 3. **Zod descreve só a entidade.** Formulários compostos validam `{ client, address }` com schemas separados — sem "super schema" de duas tabelas.
 4. **RSC compõe leituras.** Page chama `getClientById` + `getPrimaryAddressForClient` em paralelo — sem join escondido no DAL de outra entidade.
-5. **Exceções**: `context.ts`, `session.ts`, `policies/`, Auth.js (`schema/auth.ts`). Junction legado (`company_members` em `companies`) permanece até refatoração explícita.
+5. **Gate de Zod**: schema só entra no arquivo cujo nome é o da tabela. Se o arquivo não existe, **criar** — nunca colocar no "arquivo mais próximo" (`auth.ts` não é lixeira).
+6. **Junction também é 1:1.** `company_members` tem os quatro arquivos próprios (`company-members.ts`), não vive dentro de `companies`.
+7. **Exceções** (sem tabela própria): `dal/context.ts`, `dal/session.ts` (pode *ler* via DAL de outras entidades), `policies/`, `actions/geocode.ts`. Auth.js: somente `src/server/db/schema/auth.ts` (`user` + `account` do adapter). `src/schemas/auth.ts` fica **só** com `loginSchema` + `AuthFormState` — company, client, address, member **proibidos** ali.
 
-**Proibido**: entidade nova "de carona" no arquivo de outra; DAL que mistura tabelas; `src/modules/` como caminho de entidades de negócio (dois padrões).
+**Proibido**: entidade nova "de carona" no arquivo de outra; DAL que mistura tabelas; Zod de company/client em `schemas/auth.ts`; `src/modules/` como caminho de entidades de negócio (dois padrões).
+
+## Inventário de entidades (atualizar ao criar tabela)
+
+Consulte antes de criar ou mover arquivos. Cada linha = quatro arquivos com o **mesmo nome** (exceto Auth.js e infra).
+
+| Entidade | Drizzle | Zod | DAL | Actions |
+|----------|---------|-----|-----|---------|
+| `user` / `account` | `db/schema/auth.ts` | `schemas/users.ts` | `dal/users.ts` | `actions/auth.ts` |
+| `companies` | `db/schema/companies.ts` | `schemas/companies.ts` | `dal/companies.ts` | `actions/companies.ts` |
+| `company_members` | `db/schema/company-members.ts` | `schemas/company-members.ts` | `dal/company-members.ts` | (orquestrado por auth/companies) |
+| `clients` | `db/schema/clients.ts` | `schemas/clients.ts` | `dal/clients.ts` | `actions/clients.ts` |
+| `addresses` | `db/schema/addresses.ts` | `schemas/addresses.ts` | `dal/addresses.ts` | `actions/addresses.ts` |
+
+Login (sem tabela): `schemas/auth.ts` · Infra: `dal/context.ts`, `dal/session.ts`
 
 ## Regras de arquitetura
 

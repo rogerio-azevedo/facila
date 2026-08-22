@@ -10,6 +10,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
+  PageHeaderStoreProvider,
+  usePageHeaderStore,
+} from "@/stores/page-header-provider";
+import {
   SidebarStoreProvider,
   useSidebarStore,
 } from "@/stores/sidebar-provider";
@@ -45,6 +49,10 @@ function AppHeader({ context }: { context: AppShellContext }) {
   const activeItem = getNavigationItem(context.kind, pathname);
   const isActingAs = context.kind === "company" && context.isActingAs;
   const isOpen = isMobile ? openMobile : open;
+  const pageTitle = usePageHeaderStore((state) => state.title);
+  const pageDescription = usePageHeaderStore((state) => state.description);
+  const pageActions = usePageHeaderStore((state) => state.actions);
+  const title = pageTitle ?? activeItem?.label ?? "Facila";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-background/95 px-3 backdrop-blur-sm md:px-5">
@@ -55,17 +63,20 @@ function AppHeader({ context }: { context: AppShellContext }) {
         className="size-8"
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {activeItem?.label ?? "Facila"}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">{context.label}</p>
+        <h1 className="truncate text-sm font-semibold text-foreground">{title}</h1>
+        {pageDescription ? (
+          <p className="truncate text-xs text-muted-foreground">{pageDescription}</p>
+        ) : null}
       </div>
-      {isActingAs ? (
-        <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
-          <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
-          Suporte
-        </div>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">
+        {isActingAs ? (
+          <div className="flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+            <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+            Suporte
+          </div>
+        ) : null}
+        {pageActions}
+      </div>
     </header>
   );
 }
@@ -101,9 +112,11 @@ function AppShellContent({
 export function AppShell({ children, context, defaultOpen, user }: AppShellProps) {
   return (
     <SidebarStoreProvider defaultOpen={defaultOpen}>
-      <AppShellContent context={context} user={user}>
-        {children}
-      </AppShellContent>
+      <PageHeaderStoreProvider>
+        <AppShellContent context={context} user={user}>
+          {children}
+        </AppShellContent>
+      </PageHeaderStoreProvider>
     </SidebarStoreProvider>
   );
 }

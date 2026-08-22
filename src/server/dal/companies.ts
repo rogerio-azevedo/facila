@@ -1,67 +1,19 @@
 import "server-only";
 
-import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
-import { db } from "@/server/db";
-import { companyMembers, companies, users } from "@/server/db/schema";
-import type { RegisterInput } from "@/schemas/auth";
+import type { CompanyNameInput } from "@/schemas/companies";
 import { slugify } from "@/lib/slugify";
-import { isSuperAdminEmail } from "@/server/dal/users";
+import { db, type DbTransaction } from "@/server/db";
+import { companies } from "@/server/db/schema";
 
-export async function registerCompanyWithAdmin(input: RegisterInput) {
-  if (isSuperAdminEmail(input.email)) {
-    throw new Error("super-admin-register");
-  }
-
-  const passwordHash = await bcrypt.hash(input.password, 12);
-
-  let slug = slugify(input.companyName);
-  const existingSlug = await db.query.companies.findFirst({
-    where: eq(companies.slug, slug),
-  });
-
-  if (existingSlug) {
-    slug = `${slug}-${crypto.randomUUID().slice(0, 8)}`;
-  }
-
-  return db.transaction(async (tx) => {
-    const [user] = await tx
-      .insert(users)
-      .values({
-        name: input.name,
-        email: input.email,
-        passwordHash,
-        platformRole: "user",
-      })
-      .returning();
-
-    const [company] = await tx
-      .insert(companies)
-      .values({
-        name: input.companyName,
-        slug,
-      })
-      .returning();
-
-    await tx.insert(companyMembers).values({
-      companyId: company.id,
-      userId: user.id,
-      role: "admin",
-    });
-
-    return { user, company };
-  });
+function dbOrTx(tx?: DbTransaction) {
+  return tx ?? db;
 }
 
-export async function createCompanyAsSuperAdmin(input: {
-  name: string;
-  adminEmail: string;
-  adminName: string;
-  adminPassword: string;
-}) {
-  let slug = slugify(input.name);
-  const existingSlug = await db.query.companies.findFirst({
+async function resolveUniqueSlug(name: string, tx?: DbTransaction) {
+  let slug = slugify(name);
+  const existingSlug = await dbOrTx(tx).query.companies.findFirst({
     where: eq(companies.slug, slug),
   });
 
@@ -69,48 +21,21 @@ export async function createCompanyAsSuperAdmin(input: {
     slug = `${slug}-${crypto.randomUUID().slice(0, 8)}`;
   }
 
-  const passwordHash = await bcrypt.hash(input.adminPassword, 12);
+  return slug;
+}
 
-  return db.transaction(async (tx) => {
-    let user = await tx.query.users.findFirst({
-      where: eq(users.email, input.adminEmail),
-    });
+export async function createCompany(input: CompanyNameInput, tx?: DbTransaction) {
+  const slug = await resolveUniqueSlug(input.name, tx);
 
-    if (!user) {
-      [user] = await tx
-        .insert(users)
-        .values({
-          name: input.adminName,
-          email: input.adminEmail,
-          passwordHash,
-          platformRole: isSuperAdminEmail(input.adminEmail) ? "super_admin" : "user",
-        })
-        .returning();
-    }
+  const [company] = await dbOrTx(tx)
+    .insert(companies)
+    .values({
+      name: input.name,
+      slug,
+    })
+    .returning();
 
-    const [company] = await tx
-      .insert(companies)
-      .values({
-        name: input.name,
-        slug,
-      })
-      .returning();
-
-    const existingMembership = await tx.query.companyMembers.findFirst({
-      where: (members, { and, eq: eqFn }) =>
-        and(eqFn(members.companyId, company.id), eqFn(members.userId, user!.id)),
-    });
-
-    if (!existingMembership) {
-      await tx.insert(companyMembers).values({
-        companyId: company.id,
-        userId: user!.id,
-        role: "admin",
-      });
-    }
-
-    return company;
-  });
+  return company!;
 }
 
 export async function listAllCompanies() {

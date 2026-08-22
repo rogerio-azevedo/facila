@@ -1,9 +1,8 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
-
 import { db } from "@/server/db";
-import { companyMembers, users } from "@/server/db/schema";
+import { users } from "@/server/db/schema";
+import { listMembershipsByUserId } from "@/server/dal/company-members";
 
 type DbUser = typeof users.$inferSelect;
 
@@ -38,9 +37,7 @@ export async function resolveSessionCompanyContext(
     };
   }
 
-  const memberships = await db.query.companyMembers.findMany({
-    where: eq(companyMembers.userId, user.id),
-  });
+  const memberships = await listMembershipsByUserId(user.id);
 
   if (memberships.length === 0) {
     return {
@@ -63,8 +60,4 @@ export async function resolveSessionCompanyContext(
   };
 }
 
-export async function getMembership(userId: string, companyId: string) {
-  return db.query.companyMembers.findFirst({
-    where: and(eq(companyMembers.userId, userId), eq(companyMembers.companyId, companyId)),
-  });
-}
+export { getMembership } from "@/server/dal/company-members";

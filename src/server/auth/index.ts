@@ -8,8 +8,9 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 import { db } from "@/server/db";
-import { accounts, companyMembers, users } from "@/server/db/schema";
+import { accounts, users } from "@/server/db/schema";
 import { loginSchema } from "@/schemas/auth";
+import { listMembershipsByUserId } from "@/server/dal/company-members";
 import { resolveSessionCompanyContext } from "@/server/dal/session";
 
 import { authConfig } from "./auth.config";
@@ -92,9 +93,7 @@ export const {
         }
 
         if (existing.platformRole !== "super_admin") {
-          const memberships = await db.query.companyMembers.findMany({
-            where: eq(companyMembers.userId, existing.id),
-          });
+          const memberships = await listMembershipsByUserId(existing.id);
 
           if (memberships.length === 0) {
             return "/register?error=no-company";

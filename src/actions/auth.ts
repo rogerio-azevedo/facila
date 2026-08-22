@@ -3,10 +3,19 @@
 import { AuthError } from "next-auth";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
+import { companyNameSchema } from "@/schemas/companies";
+import { AuthFormState, loginSchema } from "@/schemas/auth";
+import { userSchema } from "@/schemas/users";
 import { signIn, signOut } from "@/server/auth";
-import { registerCompanyWithAdmin } from "@/server/dal/companies";
-import { getPostLoginRedirect, isSuperAdminEmail, registerSuperAdmin } from "@/server/dal/users";
-import { AuthFormState, loginSchema, registerSchema } from "@/schemas/auth";
+import { addMember } from "@/server/dal/company-members";
+import { createCompany } from "@/server/dal/companies";
+import {
+  createUser,
+  getPostLoginRedirect,
+  isSuperAdminEmail,
+  registerSuperAdmin,
+} from "@/server/dal/users";
+import { db } from "@/server/db";
 
 export async function loginAction(
   _prevState: AuthFormState,
@@ -48,35 +57,54 @@ export async function registerAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = registerSchema.safeParse({
+  const userParsed = userSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
-    companyName: formData.get("companyName"),
+  });
+  const companyParsed = companyNameSchema.safeParse({
+    name: formData.get("companyName"),
   });
 
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors };
+  if (!userParsed.success || !companyParsed.success) {
+    const userErrors = userParsed.success ? {} : userParsed.error.flatten().fieldErrors;
+    const companyErrors = companyParsed.success
+      ? {}
+      : { companyName: companyParsed.error.flatten().fieldErrors.name };
+
+    return {
+      errors: {
+        ...userErrors,
+        ...companyErrors,
+      },
+    };
   }
 
-  const redirectTo = isSuperAdminEmail(parsed.data.email)
+  const redirectTo = isSuperAdminEmail(userParsed.data.email)
     ? "/platform/companies"
     : "/dashboard";
 
   try {
-    if (isSuperAdminEmail(parsed.data.email)) {
-      await registerSuperAdmin({
-        name: parsed.data.name,
-        email: parsed.data.email,
-        password: parsed.data.password,
-      });
+    if (isSuperAdminEmail(userParsed.data.email)) {
+      await registerSuperAdmin(userParsed.data);
     } else {
-      await registerCompanyWithAdmin(parsed.data);
+      await db.transaction(async (tx) => {
+        const user = await createUser(userParsed.data, tx);
+        const company = await createCompany(companyParsed.data, tx);
+        await addMember(
+          {
+            companyId: company.id,
+            userId: user.id,
+            role: "admin",
+          },
+          tx,
+        );
+      });
     }
 
     await signIn("credentials", {
-      email: parsed.data.email,
-      password: parsed.data.password,
+      email: userParsed.data.email,
+      password: userParsed.data.password,
       redirectTo,
     });
   } catch (error) {

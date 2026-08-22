@@ -61,6 +61,7 @@ Use Zustand como padrão para estado global de UI compartilhado entre áreas ind
 Estado local e Context continuam permitidos para comportamento efêmero e interno de componentes. Stores Zustand são somente para estado de interface:
 
 - Sidebar aberta/fechada
+- Cabeçalho da página ativa (título, descrição, ações)
 - Preferências de colunas de tabela
 - Coordenação global de modais
 
@@ -74,6 +75,23 @@ src/schemas/<entidade>.ts
 src/server/dal/<entidade>.ts
 src/actions/<entidade>.ts
 ```
+
+Junction tables (`company_members`) seguem o mesmo padrão — **não** ficam dentro do arquivo da entidade pai.
+
+Formulário composto = N schemas + 1 action orquestradora:
+
+```ts
+// register: user + company (dois Zod, uma action)
+const userParsed = userSchema.safeParse({ name, email, password })
+const companyParsed = companyNameSchema.safeParse({ name: companyName })
+await db.transaction(async (tx) => {
+  const user = await createUser(userParsed.data, tx)
+  const company = await createCompany(companyParsed.data, tx)
+  await addMember({ companyId: company.id, userId: user.id, role: 'admin' }, tx)
+})
+```
+
+`src/schemas/auth.ts` = **somente login**. Schemas de company, user, client etc. ficam nos arquivos 1:1 da entidade.
 
 UI de feature em `src/app/<rota>/` e `src/components/<feature>/`. **Não** usar `src/modules/` para entidades de negócio — evita dois padrões paralelos.
 

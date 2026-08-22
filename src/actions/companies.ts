@@ -3,16 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { actAsCompanySchema, createCompanySchema } from "@/schemas/companies";
+import { userSchema } from "@/schemas/users";
 import { updateSession } from "@/server/auth";
-import { createCompanyAsSuperAdmin, getCompanyById } from "@/server/dal/companies";
+import { addMember, getMembership } from "@/server/dal/company-members";
+import { createCompany, getCompanyById } from "@/server/dal/companies";
 import {
   ForbiddenError,
   requireAuthContext,
   requirePlatformContext,
 } from "@/server/dal/context";
-import { getMembership } from "@/server/dal/session";
+import { createUser, findUserByEmail, isSuperAdminEmail } from "@/server/dal/users";
+import { db } from "@/server/db";
 import { can } from "@/server/policies";
-import { actAsCompanySchema, createCompanySchema } from "@/schemas/auth";
 
 export async function createCompanyAction(input: unknown) {
   const ctx = await requirePlatformContext();
@@ -20,12 +23,61 @@ export async function createCompanyAction(input: unknown) {
     throw new ForbiddenError();
   }
 
-  const parsed = createCompanySchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors };
+  const payload = input as {
+    name?: unknown;
+    adminName?: unknown;
+    adminEmail?: unknown;
+    adminPassword?: unknown;
+  };
+
+  const companyParsed = createCompanySchema.safeParse({ name: payload.name });
+  const adminParsed = userSchema.safeParse({
+    name: payload.adminName,
+    email: payload.adminEmail,
+    password: payload.adminPassword,
+  });
+
+  if (!companyParsed.success || !adminParsed.success) {
+    const companyErrors = companyParsed.success ? {} : companyParsed.error.flatten().fieldErrors;
+    const adminErrors = adminParsed.success
+      ? {}
+      : {
+          adminName: adminParsed.error.flatten().fieldErrors.name,
+          adminEmail: adminParsed.error.flatten().fieldErrors.email,
+          adminPassword: adminParsed.error.flatten().fieldErrors.password,
+        };
+
+    return { error: { ...companyErrors, ...adminErrors } };
   }
 
-  await createCompanyAsSuperAdmin(parsed.data);
+  await db.transaction(async (tx) => {
+    let user = await findUserByEmail(adminParsed.data.email, tx);
+
+    if (!user) {
+      user = await createUser(
+        {
+          ...adminParsed.data,
+          platformRole: isSuperAdminEmail(adminParsed.data.email) ? "super_admin" : "user",
+        },
+        tx,
+      );
+    }
+
+    const company = await createCompany(companyParsed.data, tx);
+    const existingMembership = await getMembership(user.id, company.id, tx);
+
+    if (!existingMembership) {
+      await addMember(
+        {
+          companyId: company.id,
+          userId: user.id,
+          role: "admin",
+        },
+        tx,
+      );
+    }
+  });
+
   revalidatePath("/platform/companies");
   return { success: true };
 }

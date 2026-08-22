@@ -95,6 +95,8 @@ src/app/contracts/new/page.tsx   # /contracts/new
 
 `proxy.ts` já exige auth em `/dashboard` e `/platform`. Reutilize o `AppShell` no `layout.tsx` do módulo.
 
+Toda page do módulo usa `<PageHeader />` para título/descrição/ações — ver seção "Cabeçalho de página" em `SKILL.md`.
+
 ## 6. Policies
 
 Adicionar ações em `src/server/policies/index.ts`:
@@ -123,3 +125,6 @@ Adicionar ações em `src/server/policies/index.ts`:
 - Prop `user: FullUser` em Client Component
 - Zustand guardando lista de contratos
 - Entidade nova sem os quatro arquivos 1:1
+- Schema Zod de company/client em `schemas/auth.ts` ("arquivo mais próximo")
+- `company_members` definido dentro de `db/schema/companies.ts` ou DAL de companies
+- "Super schema" que mistura campos de duas tabelas (ex.: register com user + companyName no mesmo Zod)

@@ -1,8 +1,8 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 
-import type { ClientInput } from "@/schemas/clients";
+import type { ClientInput, ClientListQuery } from "@/schemas/clients";
 import { db, type DbTransaction } from "@/server/db";
 import { clients } from "@/server/db/schema";
 import { ForbiddenError, requireCompanyContext } from "@/server/dal/context";
@@ -13,7 +13,12 @@ export type ClientListItem = {
   name: string;
   document: string;
   personType: "individual" | "organization";
-  email: string | null;
+  phone: string | null;
+};
+
+export type ClientListResult = {
+  items: ClientListItem[];
+  total: number;
 };
 
 export type ClientRecord = typeof clients.$inferSelect;
@@ -22,25 +27,58 @@ function dbOrTx(tx?: DbTransaction) {
   return tx ?? db;
 }
 
-export async function listClients(): Promise<ClientListItem[]> {
+function buildListWhere(companyId: string, query: ClientListQuery) {
+  const conditions = [eq(clients.companyId, companyId)];
+
+  if (query.personType) {
+    conditions.push(eq(clients.personType, query.personType));
+  }
+
+  if (query.q) {
+    const documentDigits = query.q.replace(/\D/g, "");
+
+    if (documentDigits) {
+      conditions.push(
+        or(ilike(clients.name, `%${query.q}%`), ilike(clients.document, `%${documentDigits}%`))!,
+      );
+    } else {
+      conditions.push(ilike(clients.name, `%${query.q}%`));
+    }
+  }
+
+  return and(...conditions);
+}
+
+export async function listClients(query: ClientListQuery): Promise<ClientListResult> {
   const ctx = await requireCompanyContext();
   if (!can(ctx, "clients:read")) {
     throw new ForbiddenError();
   }
 
-  const rows = await db
-    .select({
-      id: clients.id,
-      name: clients.name,
-      document: clients.document,
-      personType: clients.personType,
-      email: clients.email,
-    })
-    .from(clients)
-    .where(eq(clients.companyId, ctx.companyId))
-    .orderBy(desc(clients.createdAt));
+  const where = buildListWhere(ctx.companyId, query);
+  const offset = (query.page - 1) * query.pageSize;
 
-  return rows;
+  const [countRow, rows] = await Promise.all([
+    db.select({ total: count() }).from(clients).where(where),
+    db
+      .select({
+        id: clients.id,
+        name: clients.name,
+        document: clients.document,
+        personType: clients.personType,
+        phone: clients.phone,
+      })
+      .from(clients)
+      .where(where)
+      .orderBy(desc(clients.createdAt))
+      .limit(query.pageSize)
+      .offset(offset),
+  ]);
+
+  return {
+    items: rows,
+    total: countRow[0]?.total ?? 0,
+  };
 }
 
 export async function getClientById(clientId: string): Promise<ClientRecord | null> {
