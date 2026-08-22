@@ -5,6 +5,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { signIn, signOut } from "@/server/auth";
 import { registerClientWithAdmin } from "@/server/dal/clients";
+import { getPostLoginRedirect, isSuperAdminEmail, registerSuperAdmin } from "@/server/dal/users";
 import { AuthFormState, loginSchema, registerSchema } from "@/schemas/auth";
 
 export async function loginAction(
@@ -20,11 +21,13 @@ export async function loginAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  const redirectTo = await getPostLoginRedirect(parsed.data.email);
+
   try {
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/dashboard",
+      redirectTo,
     });
   } catch (error) {
     if (isRedirectError(error)) {
@@ -56,13 +59,25 @@ export async function registerAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  const redirectTo = isSuperAdminEmail(parsed.data.email)
+    ? "/platform/clients"
+    : "/dashboard";
+
   try {
-    await registerClientWithAdmin(parsed.data);
+    if (isSuperAdminEmail(parsed.data.email)) {
+      await registerSuperAdmin({
+        name: parsed.data.name,
+        email: parsed.data.email,
+        password: parsed.data.password,
+      });
+    } else {
+      await registerClientWithAdmin(parsed.data);
+    }
 
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/dashboard",
+      redirectTo,
     });
   } catch (error) {
     if (isRedirectError(error)) {
@@ -80,7 +95,7 @@ export async function registerAction(
 }
 
 export async function loginWithGoogleAction() {
-  await signIn("google", { redirectTo: "/dashboard" });
+  await signIn("google", { redirectTo: "/" });
 }
 
 export async function logoutAction() {

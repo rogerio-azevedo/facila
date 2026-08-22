@@ -7,15 +7,14 @@ import { db } from "@/server/db";
 import { clientMembers, clients, users } from "@/server/db/schema";
 import type { RegisterInput } from "@/schemas/auth";
 import { slugify } from "@/lib/slugify";
-
-function isSuperAdminEmail(email: string) {
-  const configured = process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
-  return configured ? email.toLowerCase() === configured : false;
-}
+import { isSuperAdminEmail } from "@/server/dal/users";
 
 export async function registerClientWithAdmin(input: RegisterInput) {
+  if (isSuperAdminEmail(input.email)) {
+    throw new Error("super-admin-register");
+  }
+
   const passwordHash = await bcrypt.hash(input.password, 12);
-  const platformRole = isSuperAdminEmail(input.email) ? "super_admin" : "user";
 
   let slug = slugify(input.companyName);
   const existingSlug = await db.query.clients.findFirst({
@@ -33,7 +32,7 @@ export async function registerClientWithAdmin(input: RegisterInput) {
         name: input.name,
         email: input.email,
         passwordHash,
-        platformRole,
+        platformRole: "user",
       })
       .returning();
 
