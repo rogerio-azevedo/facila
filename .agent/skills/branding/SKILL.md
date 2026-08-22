@@ -11,14 +11,14 @@ Cores vivem **somente** em `src/app/globals.css`. Não inventar hex em component
 
 ## Paleta
 
-| Token | Hex | Classe Tailwind | Uso |
-|-------|-----|-----------------|-----|
-| `navy` | `#003366` | `bg-navy`, `text-navy`, `border-navy` | Header, sidebar, chrome da marca |
-| `primary` | `#1976d2` | `bg-primary`, `text-primary` | Botões, links, ações, destaque interativo |
-| `primary-foreground` | `#ffffff` | `text-primary-foreground` | Texto sobre `primary` |
-| `sky` | `#b3e5fc` | `bg-sky`, `text-sky` | Fundo suave, chips, hover leve |
-| `background` | `#f5f5f5` | `bg-background` | Fundo da página |
-| `foreground` | `#212121` | `text-foreground` | Texto principal |
+| Token                | Hex       | Classe Tailwind                       | Uso                                       |
+| -------------------- | --------- | ------------------------------------- | ----------------------------------------- |
+| `navy`               | `#003366` | `bg-navy`, `text-navy`, `border-navy` | Header, sidebar, chrome da marca          |
+| `primary`            | `#1976d2` | `bg-primary`, `text-primary`          | Botões, links, ações, destaque interativo |
+| `primary-foreground` | `#ffffff` | `text-primary-foreground`             | Texto sobre `primary`                     |
+| `sky`                | `#b3e5fc` | `bg-sky`, `text-sky`                  | Fundo suave, chips, hover leve            |
+| `background`         | `#f5f5f5` | `bg-background`                       | Fundo da página                           |
+| `foreground`         | `#212121` | `text-foreground`                     | Texto principal                           |
 
 ## Regras
 

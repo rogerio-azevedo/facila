@@ -19,20 +19,20 @@ export const registerSchema = z.object({
     .trim(),
 });
 
-export const createClientSchema = z.object({
+export const createCompanySchema = z.object({
   name: z.string().min(2).trim(),
   adminName: z.string().min(2).trim(),
   adminEmail: z.email().trim().toLowerCase(),
   adminPassword: z.string().min(8),
 });
 
-export const actAsClientSchema = z.object({
-  clientId: z.uuid(),
+export const actAsCompanySchema = z.object({
+  companyId: z.uuid(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
-export type CreateClientInput = z.infer<typeof createClientSchema>;
+export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 
 export type AuthFormState = {
   errors?: {

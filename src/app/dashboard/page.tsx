@@ -1,25 +1,25 @@
-import { requireClientContext } from "@/server/dal/context";
-import { getClientById } from "@/server/dal/clients";
+import { requireCompanyContext } from "@/server/dal/context";
+import { getCompanyById } from "@/server/dal/companies";
 
 export default async function DashboardPage() {
-  const ctx = await requireClientContext();
-  const client = await getClientById(ctx.clientId);
+  const ctx = await requireCompanyContext();
+  const company = await getCompanyById(ctx.companyId);
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Bem-vindo ao ERP Facila{client ? ` — ${client.name}` : ""}.
+          Bem-vindo ao ERP Facila{company ? ` — ${company.name}` : ""}.
         </p>
       </div>
-      <div className="rounded-lg border bg-card p-4 text-sm">
-        <p>
-          <span className="font-medium">Papel:</span> {ctx.role}
+      <div className="rounded-lg border p-6">
+        <p className="text-sm text-muted-foreground">
+          Papel: <span className="font-medium text-foreground">{ctx.role}</span>
         </p>
         {ctx.isActingAs && (
-          <p className="mt-2 text-muted-foreground">
-            Você está no modo suporte (super admin agindo como cliente).
+          <p className="mt-2 text-sm text-amber-700">
+            Você está no modo suporte (super admin agindo como empresa).
           </p>
         )}
       </div>

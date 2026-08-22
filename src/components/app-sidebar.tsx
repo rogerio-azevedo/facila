@@ -7,12 +7,12 @@ import {
   LogOutIcon,
   ShieldCheckIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { logoutAction } from "@/actions/auth";
-import { stopActAsClientAction } from "@/actions/clients";
+import { FacilaLogo, FacilaSymbol } from "@/components/brand/facila-logo";
+import { stopActAsCompanyAction } from "@/actions/companies";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -40,7 +40,7 @@ import {
 import type { AppShellContext, AppShellUser } from "./app-shell";
 
 const navigation = {
-  client: [
+  company: [
     {
       href: "/dashboard",
       label: "Dashboard",
@@ -49,8 +49,8 @@ const navigation = {
   ],
   platform: [
     {
-      href: "/platform/clients",
-      label: "Clientes",
+      href: "/platform/companies",
+      label: "Empresas",
       icon: Building2Icon,
     },
   ],
@@ -84,7 +84,7 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar();
   const items = navigation[context.kind];
   const homeHref = items[0].href;
-  const isActingAs = context.kind === "client" && context.isActingAs;
+  const isActingAs = context.kind === "company" && context.isActingAs;
 
   function closeMobileNavigation() {
     if (isMobile) {
@@ -101,27 +101,14 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
               asChild
               size="lg"
               tooltip="Facila"
-              className="h-9 hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:size-8!"
+              className="h-9 hover:bg-transparent active:bg-transparent [&_svg]:size-auto [&_svg]:h-7 [&_svg]:w-auto group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
             >
               <Link href={homeHref} onClick={closeMobileNavigation}>
                 <span className="hidden size-8 shrink-0 items-center justify-center group-data-[collapsible=icon]:flex">
-                  <Image
-                    src="/facila-symbol.svg"
-                    alt=""
-                    width={24}
-                    height={31}
-                    priority
-                  />
+                  <FacilaSymbol className="h-7 w-auto" />
                 </span>
                 <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-                  <Image
-                    src="/facila.svg"
-                    alt="Facila"
-                    width={96}
-                    height={40}
-                    className="h-8 w-auto"
-                    priority
-                  />
+                  <FacilaLogo className="h-7 w-auto" />
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -175,7 +162,7 @@ export function AppSidebar({ context, user, ...props }: AppSidebarProps) {
             </div>
             <SidebarMenu>
               <SidebarMenuItem>
-                <form action={stopActAsClientAction}>
+                <form action={stopActAsCompanyAction}>
                   <SidebarMenuButton
                     asChild
                     tooltip="Sair do modo suporte"

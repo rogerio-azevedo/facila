@@ -13,7 +13,7 @@ export function isSuperAdminEmail(email: string) {
 
 export async function getPostLoginRedirect(email: string): Promise<string> {
   if (isSuperAdminEmail(email)) {
-    return "/platform/clients";
+    return "/platform/companies";
   }
 
   const user = await db.query.users.findFirst({
@@ -21,7 +21,7 @@ export async function getPostLoginRedirect(email: string): Promise<string> {
   });
 
   if (user?.platformRole === "super_admin") {
-    return "/platform/clients";
+    return "/platform/companies";
   }
 
   return "/dashboard";

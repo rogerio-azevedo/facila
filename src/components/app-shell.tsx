@@ -22,7 +22,7 @@ export type AppShellUser = {
 
 export type AppShellContext =
   | {
-      kind: "client";
+      kind: "company";
       label: string;
       isActingAs: boolean;
     }
@@ -43,7 +43,7 @@ function AppHeader({ context }: { context: AppShellContext }) {
   const pathname = usePathname();
   const { isMobile, open, openMobile } = useSidebar();
   const activeItem = getNavigationItem(context.kind, pathname);
-  const isActingAs = context.kind === "client" && context.isActingAs;
+  const isActingAs = context.kind === "company" && context.isActingAs;
   const isOpen = isMobile ? openMobile : open;
 
   return (

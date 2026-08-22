@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { updateSession } from "@/server/auth";
-import { createClientAsSuperAdmin, getClientById } from "@/server/dal/clients";
+import { createCompanyAsSuperAdmin, getCompanyById } from "@/server/dal/companies";
 import {
   ForbiddenError,
   requireAuthContext,
@@ -12,29 +12,29 @@ import {
 } from "@/server/dal/context";
 import { getMembership } from "@/server/dal/session";
 import { can } from "@/server/policies";
-import { actAsClientSchema, createClientSchema } from "@/schemas/auth";
+import { actAsCompanySchema, createCompanySchema } from "@/schemas/auth";
 
-export async function createClientAction(input: unknown) {
+export async function createCompanyAction(input: unknown) {
   const ctx = await requirePlatformContext();
-  if (!can(ctx, "platform:clients")) {
+  if (!can(ctx, "platform:companies")) {
     throw new ForbiddenError();
   }
 
-  const parsed = createClientSchema.safeParse(input);
+  const parsed = createCompanySchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
-  await createClientAsSuperAdmin(parsed.data);
-  revalidatePath("/platform/clients");
+  await createCompanyAsSuperAdmin(parsed.data);
+  revalidatePath("/platform/companies");
   return { success: true };
 }
 
-export async function createClientFormAction(
+export async function createCompanyFormAction(
   _prev: { error?: string; success?: boolean },
   formData: FormData,
 ): Promise<{ error?: string; success?: boolean }> {
-  const result = await createClientAction({
+  const result = await createCompanyAction({
     name: formData.get("name"),
     adminName: formData.get("adminName"),
     adminEmail: formData.get("adminEmail"),
@@ -48,26 +48,26 @@ export async function createClientFormAction(
   return { success: true };
 }
 
-export async function actAsClientAction(input: unknown) {
+export async function actAsCompanyAction(input: unknown) {
   const ctx = await requireAuthContext();
   if (!can(ctx, "platform:act-as")) {
     throw new ForbiddenError();
   }
 
-  const parsed = actAsClientSchema.safeParse(input);
+  const parsed = actAsCompanySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Cliente inválido" };
+    return { error: "Empresa inválida" };
   }
 
-  const client = await getClientById(parsed.data.clientId);
-  if (!client) {
-    return { error: "Cliente não encontrado" };
+  const company = await getCompanyById(parsed.data.companyId);
+  if (!company) {
+    return { error: "Empresa não encontrada" };
   }
 
   await updateSession({
     user: {
-      activeClientId: client.id,
-      clientRole: null,
+      activeCompanyId: company.id,
+      companyRole: null,
       isActingAs: true,
     },
   });
@@ -76,45 +76,45 @@ export async function actAsClientAction(input: unknown) {
   redirect("/dashboard");
 }
 
-export async function actAsClientFormAction(formData: FormData) {
-  const clientId = formData.get("clientId");
-  await actAsClientAction({ clientId });
+export async function actAsCompanyFormAction(formData: FormData) {
+  const companyId = formData.get("companyId");
+  await actAsCompanyAction({ companyId });
 }
 
-export async function stopActAsClientAction() {
+export async function stopActAsCompanyAction() {
   const ctx = await requireAuthContext();
-  if (ctx.kind !== "client" || !ctx.isActingAs) {
+  if (ctx.kind !== "company" || !ctx.isActingAs) {
     throw new ForbiddenError();
   }
 
   await updateSession({
     user: {
-      activeClientId: null,
-      clientRole: null,
+      activeCompanyId: null,
+      companyRole: null,
       isActingAs: false,
     },
   });
 
-  revalidatePath("/platform/clients");
-  redirect("/platform/clients");
+  revalidatePath("/platform/companies");
+  redirect("/platform/companies");
 }
 
-export async function switchClientAction(clientId: string) {
+export async function switchCompanyAction(companyId: string) {
   const session = await requireAuthContext();
 
   if (session.kind === "platform") {
-    return actAsClientAction({ clientId });
+    return actAsCompanyAction({ companyId });
   }
 
-  const membership = await getMembership(session.userId, clientId);
+  const membership = await getMembership(session.userId, companyId);
   if (!membership) {
     throw new ForbiddenError();
   }
 
   await updateSession({
     user: {
-      activeClientId: clientId,
-      clientRole: membership.role,
+      activeCompanyId: companyId,
+      companyRole: membership.role,
       isActingAs: false,
     },
   });

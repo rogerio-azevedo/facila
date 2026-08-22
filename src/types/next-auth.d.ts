@@ -3,8 +3,8 @@ import "next-auth/jwt";
 declare module "next-auth" {
   interface User {
     platformRole?: "user" | "super_admin";
-    activeClientId?: string | null;
-    clientRole?: "admin" | "member" | null;
+    activeCompanyId?: string | null;
+    companyRole?: "admin" | "member" | null;
     isActingAs?: boolean;
   }
 
@@ -15,8 +15,8 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       platformRole: "user" | "super_admin";
-      activeClientId: string | null;
-      clientRole: "admin" | "member" | null;
+      activeCompanyId: string | null;
+      companyRole: "admin" | "member" | null;
       isActingAs: boolean;
     };
   }
@@ -26,8 +26,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     userId?: string;
     platformRole?: "user" | "super_admin";
-    activeClientId?: string | null;
-    clientRole?: "admin" | "member" | null;
+    activeCompanyId?: string | null;
+    companyRole?: "admin" | "member" | null;
     isActingAs?: boolean;
   }
 }

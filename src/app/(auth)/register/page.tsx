@@ -3,7 +3,7 @@ import { RegisterForm } from "@/components/auth/register-form";
 const notices: Record<string, string> = {
   "google-new-user":
     "Conta Google não encontrada. Cadastre sua empresa abaixo antes de usar o Google.",
-  "no-client": "Sua conta existe, mas não está vinculada a nenhuma empresa. Complete o cadastro.",
+  "no-company": "Sua conta existe, mas não está vinculada a nenhuma empresa. Complete o cadastro.",
 };
 
 type RegisterPageProps = {

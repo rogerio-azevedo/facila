@@ -8,15 +8,15 @@ export type PlatformContext = {
   role: "super_admin";
 };
 
-export type ClientContext = {
-  kind: "client";
+export type CompanyContext = {
+  kind: "company";
   userId: string;
-  clientId: string;
+  companyId: string;
   role: "admin" | "member" | "super_admin";
   isActingAs: boolean;
 };
 
-export type AppContext = PlatformContext | ClientContext;
+export type AppContext = PlatformContext | CompanyContext;
 
 export class AuthError extends Error {
   constructor(message = "Unauthorized") {
@@ -38,14 +38,14 @@ export async function getCurrentContext(): Promise<AppContext | null> {
     return null;
   }
 
-  const { id, platformRole, activeClientId, clientRole, isActingAs } = session.user;
+  const { id, platformRole, activeCompanyId, companyRole, isActingAs } = session.user;
 
   if (platformRole === "super_admin") {
-    if (activeClientId && isActingAs) {
+    if (activeCompanyId && isActingAs) {
       return {
-        kind: "client",
+        kind: "company",
         userId: id,
-        clientId: activeClientId,
+        companyId: activeCompanyId,
         role: "super_admin",
         isActingAs: true,
       };
@@ -58,15 +58,15 @@ export async function getCurrentContext(): Promise<AppContext | null> {
     };
   }
 
-  if (!activeClientId || !clientRole) {
+  if (!activeCompanyId || !companyRole) {
     return null;
   }
 
   return {
-    kind: "client",
+    kind: "company",
     userId: id,
-    clientId: activeClientId,
-    role: clientRole,
+    companyId: activeCompanyId,
+    role: companyRole,
     isActingAs: false,
   };
 }
@@ -87,10 +87,10 @@ export async function requirePlatformContext(): Promise<PlatformContext> {
   return ctx;
 }
 
-export async function requireClientContext(): Promise<ClientContext> {
+export async function requireCompanyContext(): Promise<CompanyContext> {
   const ctx = await requireAuthContext();
-  if (ctx.kind !== "client") {
-    throw new ForbiddenError("Active client required");
+  if (ctx.kind !== "company") {
+    throw new ForbiddenError("Active company required");
   }
   return ctx;
 }

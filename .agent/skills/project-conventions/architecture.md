@@ -17,7 +17,7 @@ Drizzle + Neon
 ### Server Components (padrão)
 
 - Listagens, dashboards, layouts
-- Chamam DAL diretamente: `const data = await listClients(ctx)`
+- Chamam DAL diretamente: `const data = await listCompanies(ctx)`
 - Performance (waterfalls, Suspense, serialização RSC): seguir [vercel-react-best-practices](../../../.agents/skills/vercel-react-best-practices/SKILL.md)
 
 ### Server Actions
@@ -28,11 +28,11 @@ Drizzle + Neon
 
 ```ts
 'use server'
-export async function createClientAction(input: unknown) {
-  const parsed = createClientSchema.safeParse(input)
+export async function createCompanyAction(input: unknown) {
+  const parsed = createCompanySchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten() }
-  await createClient(parsed.data) // DAL
-  revalidatePath('/platform/clients')
+  await createCompany(parsed.data) // DAL
+  revalidatePath('/platform/companies')
   return { success: true }
 }
 ```
@@ -57,7 +57,7 @@ Estado local e Context continuam permitidos para comportamento efêmero e intern
 - Preferências de colunas de tabela
 - Coordenação global de modais
 
-**Proibido**: cache de entidades, sessão, `clientId`, listas de negócio.
+**Proibido**: cache de entidades, sessão, `companyId`, listas de negócio.
 
 ## Módulos de domínio
 
@@ -74,7 +74,7 @@ Módulos compartilham `getCurrentContext()` e policies globais.
 ## Cache e revalidação
 
 - Após mutação que o usuário deve ver na hora: `revalidatePath` ou `updateTag`
-- Preferir tags por módulo: `clients`, `contracts`, etc.
+- Preferir tags por módulo: `companies`, `clients`, `contracts`, etc.
 
 ## proxy.ts vs DAL
 

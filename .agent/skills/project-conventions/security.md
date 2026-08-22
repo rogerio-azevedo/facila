@@ -3,7 +3,7 @@
 ## Princípios
 
 1. **Zero trust no cliente** — FormData, searchParams, headers e body são não confiáveis.
-2. **`clientId` da sessão** — nunca aceitar do request para escopo de dados.
+2. **`companyId` da sessão** — nunca aceitar do request para escopo de tenant.
 3. **Authz na DAL** — toda operação revalida sessão e permissão.
 4. **`server-only`** — db, dal, auth não importam em Client Components.
 
@@ -13,44 +13,45 @@
 {
   userId: string
   platformRole: 'super_admin' | 'user'
-  activeClientId: string | null
-  clientRole: 'admin' | 'member' | null
+  activeCompanyId: string | null
+  companyRole: 'admin' | 'member' | null
   isActingAs: boolean
 }
 ```
 
 ### super_admin
 
-- Sem `activeClientId`: visão plataforma (gerir clientes)
-- Com `activeClientId`: act-as (`isActingAs: true`); queries filtram esse client
-- Act-as via Server Action que valida existência do client e atualiza JWT
+- Sem `activeCompanyId`: visão plataforma (gerir companies)
+- Com `activeCompanyId`: act-as (`isActingAs: true`); queries filtram essa company
+- Act-as via Server Action que valida existência da company e atualiza JWT
 
-### Usuário de cliente
+### Usuário de company
 
-- `activeClientId` obrigatório após login
-- Deve existir em `client_members` para aquele client
-- `clientRole`: `admin` | `member`
+- `activeCompanyId` obrigatório após login
+- Deve existir em `company_members` para aquela company
+- `companyRole`: `admin` | `member`
 
 ## getCurrentContext()
 
 Retornos:
 
-| Cenário | clientId | role | isActingAs |
-|---------|----------|------|------------|
+| Cenário | companyId | role | isActingAs |
+|---------|-----------|------|------------|
 | super_admin plataforma | null | super_admin | false |
 | super_admin act-as | uuid | super_admin | true |
 | admin/member | uuid | admin \| member | false |
 
-DAL de negócio de cliente **exige** `clientId !== null`.
+DAL de negócio da company **exige** `companyId !== null`.
 
 ## Policies
 
 ```ts
-can(ctx, 'clients:manage') // admin ou super_admin act-as
-can(ctx, 'platform:clients') // só super_admin sem act-as
+can(ctx, 'companies:manage') // admin ou super_admin act-as
+can(ctx, 'platform:companies') // só super_admin sem act-as
+can(ctx, 'clients:manage') // CRM dentro da company
 ```
 
-Super admin em act-as segue policies de cliente **ou** bypass explícito documentado.
+Super admin em act-as segue policies de company **ou** bypass explícito documentado.
 
 ## Server Actions
 
@@ -69,7 +70,7 @@ await db.select().from(invoices).where(eq(invoices.id, inputId))
 
 // CERTO
 await db.select().from(invoices).where(
-  and(eq(invoices.id, inputId), eq(invoices.clientId, ctx.clientId))
+  and(eq(invoices.id, inputId), eq(invoices.companyId, ctx.companyId))
 )
 ```
 

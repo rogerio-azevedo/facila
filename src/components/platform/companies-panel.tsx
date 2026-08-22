@@ -2,25 +2,25 @@
 
 import { useActionState } from "react";
 
-import { actAsClientFormAction, createClientFormAction } from "@/actions/clients";
+import { actAsCompanyFormAction, createCompanyFormAction } from "@/actions/companies";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type ClientRow = {
+type CompanyRow = {
   id: string;
   name: string;
   slug: string;
   createdAt: Date;
 };
 
-type PlatformClientsPanelProps = {
-  clients: ClientRow[];
+type PlatformCompaniesPanelProps = {
+  companies: CompanyRow[];
 };
 
-export function PlatformClientsPanel({ clients }: PlatformClientsPanelProps) {
-  const [state, createAction, pending] = useActionState(createClientFormAction, {
+export function PlatformCompaniesPanel({ companies }: PlatformCompaniesPanelProps) {
+  const [state, createAction, pending] = useActionState(createCompanyFormAction, {
     success: false,
   });
 
@@ -28,7 +28,7 @@ export function PlatformClientsPanel({ clients }: PlatformClientsPanelProps) {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Cadastrar cliente</CardTitle>
+          <CardTitle>Cadastrar empresa</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={createAction} className="grid gap-4 md:grid-cols-2">
@@ -51,10 +51,10 @@ export function PlatformClientsPanel({ clients }: PlatformClientsPanelProps) {
             <div className="md:col-span-2 space-y-2">
               {state.error && <p className="text-sm text-destructive">{state.error}</p>}
               {state.success && (
-                <p className="text-sm text-muted-foreground">Cliente criado com sucesso.</p>
+                <p className="text-sm text-muted-foreground">Empresa criada com sucesso.</p>
               )}
               <Button type="submit" disabled={pending}>
-                {pending ? "Salvando..." : "Criar cliente"}
+                {pending ? "Salvando..." : "Criar empresa"}
               </Button>
             </div>
           </form>
@@ -63,23 +63,23 @@ export function PlatformClientsPanel({ clients }: PlatformClientsPanelProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Clientes ({clients.length})</CardTitle>
+          <CardTitle>Empresas ({companies.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {clients.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum cliente cadastrado.</p>
+          {companies.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma empresa cadastrada.</p>
           )}
-          {clients.map((client) => (
+          {companies.map((company) => (
             <div
-              key={client.id}
+              key={company.id}
               className="flex items-center justify-between rounded-lg border p-4"
             >
               <div>
-                <p className="font-medium">{client.name}</p>
-                <p className="text-sm text-muted-foreground">{client.slug}</p>
+                <p className="font-medium">{company.name}</p>
+                <p className="text-sm text-muted-foreground">{company.slug}</p>
               </div>
-              <form action={actAsClientFormAction}>
-                <input type="hidden" name="clientId" value={client.id} />
+              <form action={actAsCompanyFormAction}>
+                <input type="hidden" name="companyId" value={company.id} />
                 <Button variant="outline" size="sm" type="submit">
                   Agir como
                 </Button>

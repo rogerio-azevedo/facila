@@ -4,7 +4,7 @@ import { AuthError } from "next-auth";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { signIn, signOut } from "@/server/auth";
-import { registerClientWithAdmin } from "@/server/dal/clients";
+import { registerCompanyWithAdmin } from "@/server/dal/companies";
 import { getPostLoginRedirect, isSuperAdminEmail, registerSuperAdmin } from "@/server/dal/users";
 import { AuthFormState, loginSchema, registerSchema } from "@/schemas/auth";
 
@@ -60,7 +60,7 @@ export async function registerAction(
   }
 
   const redirectTo = isSuperAdminEmail(parsed.data.email)
-    ? "/platform/clients"
+    ? "/platform/companies"
     : "/dashboard";
 
   try {
@@ -71,7 +71,7 @@ export async function registerAction(
         password: parsed.data.password,
       });
     } else {
-      await registerClientWithAdmin(parsed.data);
+      await registerCompanyWithAdmin(parsed.data);
     }
 
     await signIn("credentials", {

@@ -1,6 +1,6 @@
 ---
 name: project-conventions
-description: Convenções do ERP Facila (Next 16, DAL, Auth.js, Drizzle, multi-cliente com super_admin). Use ao criar módulos, actions, telas, schemas, auth ou alterar arquitetura. Sempre aplicar junto com vercel-react-best-practices ao escrever ou revisar UI React/Next.
+description: Convenções do ERP Facila (Next 16, DAL, Auth.js, Drizzle, multi-empresa com super_admin). Use ao criar módulos, actions, telas, schemas, auth ou alterar arquitetura. Sempre aplicar junto com vercel-react-best-practices ao escrever ou revisar UI React/Next.
 ---
 
 # Convenções do projeto Facila
@@ -27,9 +27,10 @@ Ao criar, alterar ou revisar páginas, componentes, Server Actions ou data fetch
 ## Modelo de acesso
 
 - **Plataforma Facila** + `super_admin` (você)
-- **`clients`** = empresas que usam o ERP (não confundir com `customers` do CRM futuro)
-- Papéis por cliente: `admin` | `member`
-- `activeClientId` vem **só da sessão JWT**, nunca do cliente (FormData, query, etc.)
+- **`companies`** = empresas que contratam o ERP (tenant)
+- **`clients`** = clientes finais da company (CRM — contratos, NF)
+- Papéis por company: `admin` | `member`
+- `activeCompanyId` vem **só da sessão JWT**, nunca do cliente (FormData, query, etc.)
 
 ## Rotas (`src/app`)
 
@@ -40,11 +41,11 @@ src/app/
   layout.tsx + page.tsx + globals.css
   (auth)/login  register     → /login, /register   (grupo só de layout)
   dashboard/                 → /dashboard
-  platform/clients/          → /platform/clients
+  platform/companies/        → /platform/companies
   api/auth/[...nextauth]/
 ```
 
-Módulos futuros: `src/app/contracts/`, `src/app/customers/` — cada um com `page.tsx` (e `layout.tsx` se precisar do AppShell).
+Módulos futuros: `src/app/clients/`, `src/app/contracts/` — cada um com `page.tsx` (e `layout.tsx` se precisar do AppShell).
 
 ## Onde colocar cada coisa
 
@@ -64,20 +65,20 @@ Módulos futuros: `src/app/contracts/`, `src/app/customers/` — cada um com `pa
 2. **Mutar dados**: Server Action fina → valida com Zod → chama DAL → `revalidatePath` / `updateTag`.
 3. **Route Handlers**: só Auth.js, webhooks, downloads públicos.
 4. **`proxy.ts`**: redirect de auth. **Não** substitui authz na DAL.
-5. Toda tabela de negócio tem `clientId`. Toda query filtra por `ctx.clientId` (exceto DAL de plataforma).
+5. Toda tabela de negócio tem `companyId` (tenant). Tabelas de CRM (ex.: `clients`, `contracts`) também filtram por `ctx.companyId`.
 
 ## Fluxo de contexto
 
 ```ts
 getCurrentContext() // src/server/dal/context.ts
-// super_admin + activeClientId → act-as
-// super_admin sem client → plataforma (DAL de negócio recusa)
-// admin | member → clientId da sessão
+// super_admin + activeCompanyId → act-as
+// super_admin sem company → plataforma (DAL de negócio recusa)
+// admin | member → companyId da sessão
 ```
 
 ## Checklist rápido (nova feature)
 
-- [ ] Schema Drizzle com `clientId` se for dado de cliente
+- [ ] Schema Drizzle com `companyId` se for dado de tenant ou CRM
 - [ ] Zod em `src/schemas/`
 - [ ] DAL em `src/server/dal/` com auth + authz
 - [ ] Action fina em `src/actions/`

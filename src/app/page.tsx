@@ -10,7 +10,7 @@ export default async function HomePage() {
   }
 
   if (session.user.platformRole === "super_admin" && !session.user.isActingAs) {
-    redirect("/platform/clients");
+    redirect("/platform/companies");
   }
 
   redirect("/dashboard");

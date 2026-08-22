@@ -8,9 +8,9 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 import { db } from "@/server/db";
-import { accounts, clientMembers, users } from "@/server/db/schema";
+import { accounts, companyMembers, users } from "@/server/db/schema";
 import { loginSchema } from "@/schemas/auth";
-import { resolveSessionClientContext } from "@/server/dal/session";
+import { resolveSessionCompanyContext } from "@/server/dal/session";
 
 import { authConfig } from "./auth.config";
 
@@ -54,7 +54,7 @@ export const {
           return null;
         }
 
-        const clientContext = await resolveSessionClientContext(user);
+        const companyContext = await resolveSessionCompanyContext(user);
 
         return {
           id: user.id,
@@ -62,7 +62,7 @@ export const {
           name: user.name,
           image: user.image,
           platformRole: user.platformRole,
-          ...clientContext,
+          ...companyContext,
         };
       },
     }),
@@ -92,12 +92,12 @@ export const {
         }
 
         if (existing.platformRole !== "super_admin") {
-          const memberships = await db.query.clientMembers.findMany({
-            where: eq(clientMembers.userId, existing.id),
+          const memberships = await db.query.companyMembers.findMany({
+            where: eq(companyMembers.userId, existing.id),
           });
 
           if (memberships.length === 0) {
-            return "/register?error=no-client";
+            return "/register?error=no-company";
           }
         }
       }
@@ -111,16 +111,16 @@ export const {
         });
 
         if (dbUser) {
-          const clientContext = await resolveSessionClientContext(dbUser, {
-            activeClientId: user.activeClientId,
+          const companyContext = await resolveSessionCompanyContext(dbUser, {
+            activeCompanyId: user.activeCompanyId,
             isActingAs: user.isActingAs,
           });
 
           token.userId = dbUser.id;
           token.platformRole = dbUser.platformRole;
-          token.activeClientId = clientContext.activeClientId;
-          token.clientRole = clientContext.clientRole;
-          token.isActingAs = clientContext.isActingAs;
+          token.activeCompanyId = companyContext.activeCompanyId;
+          token.companyRole = companyContext.companyRole;
+          token.isActingAs = companyContext.isActingAs;
         }
       } else if (token.userId && trigger !== "update") {
         const dbUser = await db.query.users.findFirst({
@@ -129,22 +129,22 @@ export const {
 
         if (dbUser) {
           token.platformRole = dbUser.platformRole;
-          const clientContext = await resolveSessionClientContext(dbUser, {
-            activeClientId: token.activeClientId as string | null | undefined,
+          const companyContext = await resolveSessionCompanyContext(dbUser, {
+            activeCompanyId: token.activeCompanyId as string | null | undefined,
             isActingAs: Boolean(token.isActingAs),
           });
-          token.activeClientId = clientContext.activeClientId;
-          token.clientRole = clientContext.clientRole;
-          token.isActingAs = clientContext.isActingAs;
+          token.activeCompanyId = companyContext.activeCompanyId;
+          token.companyRole = companyContext.companyRole;
+          token.isActingAs = companyContext.isActingAs;
         }
       }
 
       if (trigger === "update" && session?.user) {
-        if ("activeClientId" in session.user) {
-          token.activeClientId = session.user.activeClientId ?? null;
+        if ("activeCompanyId" in session.user) {
+          token.activeCompanyId = session.user.activeCompanyId ?? null;
         }
-        if ("clientRole" in session.user) {
-          token.clientRole = session.user.clientRole ?? null;
+        if ("companyRole" in session.user) {
+          token.companyRole = session.user.companyRole ?? null;
         }
         if ("isActingAs" in session.user) {
           token.isActingAs = session.user.isActingAs ?? false;
@@ -157,8 +157,8 @@ export const {
       if (session.user) {
         session.user.id = token.userId as string;
         session.user.platformRole = (token.platformRole as "user" | "super_admin") ?? "user";
-        session.user.activeClientId = (token.activeClientId as string | null) ?? null;
-        session.user.clientRole = (token.clientRole as "admin" | "member" | null) ?? null;
+        session.user.activeCompanyId = (token.activeCompanyId as string | null) ?? null;
+        session.user.companyRole = (token.companyRole as "admin" | "member" | null) ?? null;
         session.user.isActingAs = Boolean(token.isActingAs);
       }
 

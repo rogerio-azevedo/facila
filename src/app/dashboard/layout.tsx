@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-preference";
 import { auth } from "@/server/auth";
-import { getClientById } from "@/server/dal/clients";
+import { getCompanyById } from "@/server/dal/companies";
 import { getCurrentContext } from "@/server/dal/context";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,20 +16,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const ctx = await getCurrentContext();
 
   if (session.user.platformRole === "super_admin" && !session.user.isActingAs) {
-    redirect("/platform/clients");
+    redirect("/platform/companies");
   }
 
-  if (!ctx || ctx.kind !== "client") {
+  if (!ctx || ctx.kind !== "company") {
     redirect("/login");
   }
 
-  const client = await getClientById(ctx.clientId);
+  const company = await getCompanyById(ctx.companyId);
 
   return (
     <AppShell
       context={{
-        kind: "client",
-        label: client?.name ?? "Área do cliente",
+        kind: "company",
+        label: company?.name ?? "Área da empresa",
         isActingAs: session.user.isActingAs,
       }}
       defaultOpen={getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value)}

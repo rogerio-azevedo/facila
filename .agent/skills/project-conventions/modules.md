@@ -1,6 +1,6 @@
 # Criar um módulo novo
 
-Exemplo: módulo `contracts` (contratos).
+Exemplo: módulo `contracts` (contratos emitidos para um client da company).
 
 ## 1. Schema Drizzle
 
@@ -9,13 +9,14 @@ Em `src/server/db/schema/` ou `src/modules/contracts/schema.ts`:
 ```ts
 export const contracts = pgTable('contracts', {
   id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id),
   clientId: uuid('client_id').notNull().references(() => clients.id),
   title: text('title').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 ```
 
-Sempre `clientId` + índice.
+Sempre `companyId` + índice. CRM (`clients`, `contracts`, `invoices`) também referencia o client final.
 
 Depois: `pnpm db:generate` → revisar SQL → `pnpm db:migrate`.
 
@@ -25,6 +26,7 @@ Depois: `pnpm db:generate` → revisar SQL → `pnpm db:migrate`.
 
 ```ts
 export const createContractSchema = z.object({
+  clientId: z.uuid(),
   title: z.string().min(1).max(200),
 })
 ```
@@ -37,17 +39,17 @@ Actions recebem `unknown` e fazem `safeParse`.
 
 ```ts
 import 'server-only'
-import { requireClientContext } from './context'
+import { requireCompanyContext } from './context'
 
 export async function listContracts() {
-  const ctx = await requireClientContext()
-  return db.select().from(contracts).where(eq(contracts.clientId, ctx.clientId))
+  const ctx = await requireCompanyContext()
+  return db.select().from(contracts).where(eq(contracts.companyId, ctx.companyId))
 }
 
 export async function createContract(input: CreateContractInput) {
-  const ctx = await requireClientContext()
+  const ctx = await requireCompanyContext()
   if (!can(ctx, 'contracts:create')) throw new ForbiddenError()
-  // insert com ctx.clientId
+  // insert com ctx.companyId + validar clientId pertence à company
 }
 ```
 
@@ -81,21 +83,21 @@ Adicionar ações em `src/server/policies/index.ts`:
 
 ```ts
 'contracts:create': (ctx) => ctx.role === 'admin' || ctx.role === 'super_admin'
-'contracts:read': (ctx) => true // dentro do client
+'contracts:read': (ctx) => ctx.kind === 'company'
 ```
 
 ## 7. Nomenclatura
 
 | Termo | Significado |
 |-------|-------------|
-| `clients` | Empresa assinante do ERP |
-| `customers` | Cliente final do assinante (CRM) |
+| `companies` | Empresa assinante do ERP (tenant) |
+| `companyMembers` | vínculo user ↔ company + role |
+| `clients` | Cliente final da company (CRM) |
 | `users` | Pessoa com login |
-| `clientMembers` | vínculo user ↔ client + role |
 
 ## Anti-patterns
 
-- Query sem `clientId` em tabela de negócio
+- Query sem `companyId` em tabela de negócio
 - Action com lógica de banco inline
 - Prop `user: FullUser` em Client Component
 - Zustand guardando lista de contratos

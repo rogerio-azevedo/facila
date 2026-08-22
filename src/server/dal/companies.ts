@@ -4,12 +4,12 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
-import { clientMembers, clients, users } from "@/server/db/schema";
+import { companyMembers, companies, users } from "@/server/db/schema";
 import type { RegisterInput } from "@/schemas/auth";
 import { slugify } from "@/lib/slugify";
 import { isSuperAdminEmail } from "@/server/dal/users";
 
-export async function registerClientWithAdmin(input: RegisterInput) {
+export async function registerCompanyWithAdmin(input: RegisterInput) {
   if (isSuperAdminEmail(input.email)) {
     throw new Error("super-admin-register");
   }
@@ -17,8 +17,8 @@ export async function registerClientWithAdmin(input: RegisterInput) {
   const passwordHash = await bcrypt.hash(input.password, 12);
 
   let slug = slugify(input.companyName);
-  const existingSlug = await db.query.clients.findFirst({
-    where: eq(clients.slug, slug),
+  const existingSlug = await db.query.companies.findFirst({
+    where: eq(companies.slug, slug),
   });
 
   if (existingSlug) {
@@ -36,33 +36,33 @@ export async function registerClientWithAdmin(input: RegisterInput) {
       })
       .returning();
 
-    const [client] = await tx
-      .insert(clients)
+    const [company] = await tx
+      .insert(companies)
       .values({
         name: input.companyName,
         slug,
       })
       .returning();
 
-    await tx.insert(clientMembers).values({
-      clientId: client.id,
+    await tx.insert(companyMembers).values({
+      companyId: company.id,
       userId: user.id,
       role: "admin",
     });
 
-    return { user, client };
+    return { user, company };
   });
 }
 
-export async function createClientAsSuperAdmin(input: {
+export async function createCompanyAsSuperAdmin(input: {
   name: string;
   adminEmail: string;
   adminName: string;
   adminPassword: string;
 }) {
   let slug = slugify(input.name);
-  const existingSlug = await db.query.clients.findFirst({
-    where: eq(clients.slug, slug),
+  const existingSlug = await db.query.companies.findFirst({
+    where: eq(companies.slug, slug),
   });
 
   if (existingSlug) {
@@ -88,39 +88,39 @@ export async function createClientAsSuperAdmin(input: {
         .returning();
     }
 
-    const [client] = await tx
-      .insert(clients)
+    const [company] = await tx
+      .insert(companies)
       .values({
         name: input.name,
         slug,
       })
       .returning();
 
-    const existingMembership = await tx.query.clientMembers.findFirst({
+    const existingMembership = await tx.query.companyMembers.findFirst({
       where: (members, { and, eq: eqFn }) =>
-        and(eqFn(members.clientId, client.id), eqFn(members.userId, user!.id)),
+        and(eqFn(members.companyId, company.id), eqFn(members.userId, user!.id)),
     });
 
     if (!existingMembership) {
-      await tx.insert(clientMembers).values({
-        clientId: client.id,
+      await tx.insert(companyMembers).values({
+        companyId: company.id,
         userId: user!.id,
         role: "admin",
       });
     }
 
-    return client;
+    return company;
   });
 }
 
-export async function listAllClients() {
-  return db.query.clients.findMany({
+export async function listAllCompanies() {
+  return db.query.companies.findMany({
     orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
 }
 
-export async function getClientById(clientId: string) {
-  return db.query.clients.findFirst({
-    where: eq(clients.id, clientId),
+export async function getCompanyById(companyId: string) {
+  return db.query.companies.findFirst({
+    where: eq(companies.id, companyId),
   });
 }

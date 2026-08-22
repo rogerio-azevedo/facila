@@ -3,68 +3,68 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
-import { clientMembers, users } from "@/server/db/schema";
+import { companyMembers, users } from "@/server/db/schema";
 
 type DbUser = typeof users.$inferSelect;
 
-type SessionClientOptions = {
-  activeClientId?: string | null;
+type SessionCompanyOptions = {
+  activeCompanyId?: string | null;
   isActingAs?: boolean;
 };
 
-export async function resolveSessionClientContext(
+export async function resolveSessionCompanyContext(
   user: DbUser,
-  options: SessionClientOptions = {},
+  options: SessionCompanyOptions = {},
 ) {
   if (user.platformRole === "super_admin") {
-    if (options.activeClientId && options.isActingAs) {
-      const client = await db.query.clients.findFirst({
-        where: (clients, { eq: eqFn }) => eqFn(clients.id, options.activeClientId!),
+    if (options.activeCompanyId && options.isActingAs) {
+      const company = await db.query.companies.findFirst({
+        where: (companies, { eq: eqFn }) => eqFn(companies.id, options.activeCompanyId!),
       });
 
-      if (client) {
+      if (company) {
         return {
-          activeClientId: client.id,
-          clientRole: null as "admin" | "member" | null,
+          activeCompanyId: company.id,
+          companyRole: null as "admin" | "member" | null,
           isActingAs: true,
         };
       }
     }
 
     return {
-      activeClientId: null,
-      clientRole: null as "admin" | "member" | null,
+      activeCompanyId: null,
+      companyRole: null as "admin" | "member" | null,
       isActingAs: false,
     };
   }
 
-  const memberships = await db.query.clientMembers.findMany({
-    where: eq(clientMembers.userId, user.id),
+  const memberships = await db.query.companyMembers.findMany({
+    where: eq(companyMembers.userId, user.id),
   });
 
   if (memberships.length === 0) {
     return {
-      activeClientId: null,
-      clientRole: null as "admin" | "member" | null,
+      activeCompanyId: null,
+      companyRole: null as "admin" | "member" | null,
       isActingAs: false,
     };
   }
 
-  const preferred = options.activeClientId
-    ? memberships.find((membership) => membership.clientId === options.activeClientId)
+  const preferred = options.activeCompanyId
+    ? memberships.find((membership) => membership.companyId === options.activeCompanyId)
     : undefined;
 
   const active = preferred ?? memberships[0]!;
 
   return {
-    activeClientId: active.clientId,
-    clientRole: active.role,
+    activeCompanyId: active.companyId,
+    companyRole: active.role,
     isActingAs: false,
   };
 }
 
-export async function getMembership(userId: string, clientId: string) {
-  return db.query.clientMembers.findFirst({
-    where: and(eq(clientMembers.userId, userId), eq(clientMembers.clientId, clientId)),
+export async function getMembership(userId: string, companyId: string) {
+  return db.query.companyMembers.findFirst({
+    where: and(eq(companyMembers.userId, userId), eq(companyMembers.companyId, companyId)),
   });
 }
