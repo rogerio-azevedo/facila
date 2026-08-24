@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { formatCompetenceMonth, isOverdue } from "@/lib/billing";
 import { formatCurrency, formatDate } from "@/lib/format-currency";
+import { accountReceivableNfseStatusLabels } from "@/schemas/service-invoices";
 import {
   accountReceivableStatusLabels,
   paymentMethodLabels,
@@ -36,11 +37,18 @@ export type AccountReceivableTableRow = {
     | "debit_card"
     | "other"
     | null;
+  nfseStatus: "none" | "pending" | "authorized" | "rejected" | "error" | "canceled";
 };
 
 type AccountsReceivableTableProps = {
   rows: AccountReceivableTableRow[];
   showClient?: boolean;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string, checked: boolean) => void;
+  onToggleSelectAll?: (checked: boolean) => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
 };
 
 function getDisplayStatus(row: AccountReceivableTableRow) {
@@ -66,14 +74,37 @@ function getContractLabel(row: AccountReceivableTableRow) {
 export function AccountsReceivableTable({
   rows,
   showClient = false,
+  selectable = false,
+  selectedIds,
+  onToggleSelection,
+  onToggleSelectAll,
+  allSelected = false,
+  someSelected = false,
 }: AccountsReceivableTableProps) {
-  const colSpan = 7 + (showClient ? 1 : 0);
+  const colSpan = 8 + (showClient ? 1 : 0) + (selectable ? 1 : 0);
 
   return (
     <div className="rounded-lg border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
+            {selectable ? (
+              <TableHead className="h-9 w-10 py-2">
+                {rows.length > 0 ? (
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(element) => {
+                      if (element) {
+                        element.indeterminate = someSelected && !allSelected;
+                      }
+                    }}
+                    onChange={(event) => onToggleSelectAll?.(event.target.checked)}
+                    aria-label="Selecionar todas as contas"
+                  />
+                ) : null}
+              </TableHead>
+            ) : null}
             {showClient ? (
               <TableHead className="h-9 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 Cliente
@@ -95,6 +126,9 @@ export function AccountsReceivableTable({
               Status
             </TableHead>
             <TableHead className="h-9 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              NFS-e
+            </TableHead>
+            <TableHead className="h-9 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Pagamento
             </TableHead>
             <TableHead className="h-9 py-2 text-right text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -112,6 +146,16 @@ export function AccountsReceivableTable({
           ) : (
             rows.map((row) => (
               <TableRow key={row.id}>
+                {selectable ? (
+                  <TableCell className="py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds?.has(row.id) ?? false}
+                      onChange={(event) => onToggleSelection?.(row.id, event.target.checked)}
+                      aria-label={`Selecionar ${getContractLabel(row)}`}
+                    />
+                  </TableCell>
+                ) : null}
                 {showClient ? (
                   <TableCell className="py-2">{row.clientName ?? "-"}</TableCell>
                 ) : null}
@@ -122,6 +166,9 @@ export function AccountsReceivableTable({
                 <TableCell className="py-2">{formatDate(row.dueDate)}</TableCell>
                 <TableCell className="py-2">{formatCurrency(row.amount)}</TableCell>
                 <TableCell className="py-2">{getDisplayStatus(row)}</TableCell>
+                <TableCell className="py-2">
+                  {accountReceivableNfseStatusLabels[row.nfseStatus]}
+                </TableCell>
                 <TableCell className="py-2">
                   {row.paymentMethod
                     ? `${paymentMethodLabels[row.paymentMethod]} (${formatDate(row.paymentDate)})`

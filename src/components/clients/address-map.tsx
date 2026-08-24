@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -15,6 +15,7 @@ const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
 
 export function AddressMap({ latitude, longitude, flyTarget, onMapClick }: AddressMapProps) {
   const mapRef = useRef<MapRef>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     if (flyTarget && mapRef.current) {
@@ -46,11 +47,14 @@ export function AddressMap({ latitude, longitude, flyTarget, onMapClick }: Addre
         }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         style={{ width: "100%", height: "100%" }}
+        onLoad={() => setMapLoaded(true)}
         onClick={(event) => {
           onMapClick({ lat: event.lngLat.lat, lng: event.lngLat.lng });
         }}
       >
-        <Marker latitude={latitude} longitude={longitude} anchor="bottom" />
+        {mapLoaded ? (
+          <Marker latitude={latitude} longitude={longitude} anchor="bottom" />
+        ) : null}
       </Map>
     </div>
   );

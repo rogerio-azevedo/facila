@@ -36,6 +36,8 @@ export type AccountReceivableListItem = {
     | "debit_card"
     | "other"
     | null;
+  nfseStatus: "none" | "pending" | "authorized" | "rejected" | "error" | "canceled";
+  activeServiceInvoiceId: string | null;
 };
 
 export type AccountReceivableListResult = {
@@ -44,6 +46,15 @@ export type AccountReceivableListResult = {
 };
 
 export type AccountReceivableRecord = typeof accountsReceivable.$inferSelect;
+
+export type AccountReceivableSummary = {
+  id: string;
+  clientId: string;
+  amount: string;
+  competenceDate: Date;
+  description: string;
+  nfseStatus: AccountReceivableListItem["nfseStatus"];
+};
 
 export type CreateAccountReceivableInput = AccountReceivableInput & {
   billingRunId?: string;
@@ -118,6 +129,8 @@ export async function listAccountsReceivable(
         status: accountsReceivable.status,
         paymentDate: accountsReceivable.paymentDate,
         paymentMethod: accountsReceivable.paymentMethod,
+        nfseStatus: accountsReceivable.nfseStatus,
+        activeServiceInvoiceId: accountsReceivable.activeServiceInvoiceId,
       })
       .from(accountsReceivable)
       .where(where)
@@ -159,6 +172,8 @@ export async function listAccountsReceivableByClientId(
       status: accountsReceivable.status,
       paymentDate: accountsReceivable.paymentDate,
       paymentMethod: accountsReceivable.paymentMethod,
+      nfseStatus: accountsReceivable.nfseStatus,
+      activeServiceInvoiceId: accountsReceivable.activeServiceInvoiceId,
     })
     .from(accountsReceivable)
     .where(
@@ -169,6 +184,61 @@ export async function listAccountsReceivableByClientId(
     )
     .orderBy(desc(accountsReceivable.competenceDate), desc(accountsReceivable.createdAt))
     .limit(limit);
+}
+
+export async function listAccountsReceivableByIds(
+  ids: string[],
+): Promise<AccountReceivableSummary[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "accounts-receivable:read")) {
+    throw new ForbiddenError();
+  }
+
+  return db
+    .select({
+      id: accountsReceivable.id,
+      clientId: accountsReceivable.clientId,
+      amount: accountsReceivable.amount,
+      competenceDate: accountsReceivable.competenceDate,
+      description: accountsReceivable.description,
+      nfseStatus: accountsReceivable.nfseStatus,
+    })
+    .from(accountsReceivable)
+    .where(
+      and(
+        eq(accountsReceivable.companyId, ctx.companyId),
+        inArray(accountsReceivable.id, ids),
+      ),
+    );
+}
+
+export async function listAccountReceivableIdsByClientIds(
+  clientIds: string[],
+): Promise<string[]> {
+  if (clientIds.length === 0) {
+    return [];
+  }
+
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "accounts-receivable:read")) {
+    throw new ForbiddenError();
+  }
+
+  const rows = await db
+    .select({ id: accountsReceivable.id })
+    .from(accountsReceivable)
+    .where(
+      and(
+        eq(accountsReceivable.companyId, ctx.companyId),
+        inArray(accountsReceivable.clientId, clientIds),
+      ),
+    );
+
+  return rows.map((row) => row.id);
 }
 
 export async function getAccountReceivableById(

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   Table,
   TableBody,
@@ -40,7 +42,11 @@ export function BillingRunsHistory({ runs }: BillingRunsHistoryProps) {
           ) : (
             runs.map((run) => (
               <TableRow key={run.id}>
-                <TableCell>{formatCompetenceMonth(run.competenceDate)}</TableCell>
+                <TableCell>
+                  <Link href={`/billing/${run.id}`} className="font-medium hover:underline">
+                    {formatCompetenceMonth(run.competenceDate)}
+                  </Link>
+                </TableCell>
                 <TableCell>{billingRunStatusLabels[run.status]}</TableCell>
                 <TableCell>{run.generatedCount}</TableCell>
                 <TableCell>{run.skippedCount}</TableCell>

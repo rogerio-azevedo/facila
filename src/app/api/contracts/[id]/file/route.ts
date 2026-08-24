@@ -66,7 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
       if (error.message === "file-not-pdf") {
         return errorResponse("Apenas arquivos PDF são permitidos", 400);
       }
-      if (error.message === "R2 credentials not configured" || error.message === "R2_CONTRACTS_BUCKET not configured") {
+      if (error.message === "R2 credentials not configured" || error.message === "R2_BUCKET_NAME not configured") {
         return errorResponse("Armazenamento de contratos não configurado", 503);
       }
     }
@@ -125,7 +125,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     if (error instanceof Error) {
-      if (error.message === "R2 credentials not configured" || error.message === "R2_CONTRACTS_BUCKET not configured") {
+      if (error.message === "R2 credentials not configured" || error.message === "R2_BUCKET_NAME not configured") {
         return errorResponse("Armazenamento de contratos não configurado", 503);
       }
     }

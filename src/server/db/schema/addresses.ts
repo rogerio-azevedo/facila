@@ -12,8 +12,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { clients } from "./clients";
 import { companies } from "./companies";
+import { issuers } from "./issuers";
 
-export const addressOwnerTypeEnum = pgEnum("address_owner_type", ["company", "client"]);
+export const addressOwnerTypeEnum = pgEnum("address_owner_type", ["company", "client", "issuer"]);
 
 export const addressTypeEnum = pgEnum("address_type", ["main", "billing", "shipping"]);
 
@@ -26,6 +27,9 @@ export const addresses = pgTable(
       .references(() => companies.id, { onDelete: "cascade" }),
     ownerType: addressOwnerTypeEnum("owner_type").notNull(),
     clientOwnerId: uuid("client_owner_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
+    issuerOwnerId: uuid("issuer_owner_id").references(() => issuers.id, {
       onDelete: "cascade",
     }),
     type: addressTypeEnum("type").notNull().default("main"),
@@ -47,9 +51,10 @@ export const addresses = pgTable(
   (table) => [
     index("addresses_company_id_idx").on(table.companyId),
     index("addresses_client_owner_id_idx").on(table.clientOwnerId),
+    index("addresses_issuer_owner_id_idx").on(table.issuerOwnerId),
     check(
       "addresses_owner_check",
-      sql`(${table.ownerType} = 'company' AND ${table.clientOwnerId} IS NULL) OR (${table.ownerType} = 'client' AND ${table.clientOwnerId} IS NOT NULL)`,
+      sql`(${table.ownerType} = 'company' AND ${table.clientOwnerId} IS NULL AND ${table.issuerOwnerId} IS NULL) OR (${table.ownerType} = 'client' AND ${table.clientOwnerId} IS NOT NULL AND ${table.issuerOwnerId} IS NULL) OR (${table.ownerType} = 'issuer' AND ${table.issuerOwnerId} IS NOT NULL AND ${table.clientOwnerId} IS NULL)`,
     ),
   ],
 );

@@ -4,66 +4,13 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+import { getR2Bucket, getR2Client, R2_PREFIX } from "@/server/storage/r2-client";
+
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const DOWNLOAD_URL_EXPIRES_IN = 600;
-
-let r2Client: S3Client | null = null;
-
-function getR2Endpoint(): string {
-  const endpoint = process.env.R2_ENDPOINT?.trim();
-
-  if (endpoint) {
-    return endpoint;
-  }
-
-  const accountId = process.env.R2_ACCOUNT_ID?.trim();
-
-  if (accountId) {
-    return `https://${accountId}.r2.cloudflarestorage.com`;
-  }
-
-  throw new Error("R2 credentials not configured");
-}
-
-function getR2Client(): S3Client {
-  if (r2Client) {
-    return r2Client;
-  }
-
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
-  const secretAccessKey =
-    process.env.R2_SECRET_ACCESS_KEY?.trim() ?? process.env.R2_ACCESS_SECRET_KEY?.trim();
-
-  if (!accessKeyId || !secretAccessKey) {
-    throw new Error("R2 credentials not configured");
-  }
-
-  r2Client = new S3Client({
-    region: "auto",
-    endpoint: getR2Endpoint(),
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  });
-
-  return r2Client;
-}
-
-function getContractsBucket(): string {
-  const bucket =
-    process.env.R2_CONTRACTS_BUCKET?.trim() ?? process.env.R2_BUCKET_NAME?.trim();
-
-  if (!bucket) {
-    throw new Error("R2_CONTRACTS_BUCKET not configured");
-  }
-
-  return bucket;
-}
 
 export function buildContractFileKey(
   companyId: string,
@@ -72,7 +19,7 @@ export function buildContractFileKey(
 ): string {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const timestamp = Date.now();
-  return `contracts/${companyId}/${contractId}/${timestamp}_${safeName}`;
+  return `${R2_PREFIX.contracts}/${companyId}/${contractId}/${timestamp}_${safeName}`;
 }
 
 export function validateContractPdfFile(file: File) {
@@ -100,7 +47,7 @@ export async function uploadContractFile(params: {
 }): Promise<{ key: string; size: number; mime: string }> {
   validateContractPdfFile(params.file);
 
-  const bucket = getContractsBucket();
+  const bucket = getR2Bucket();
   const key = buildContractFileKey(params.companyId, params.contractId, params.file.name);
   const buffer = Buffer.from(await params.file.arrayBuffer());
 
@@ -129,7 +76,7 @@ export async function uploadContractFile(params: {
 }
 
 export async function deleteContractFile(key: string): Promise<void> {
-  const bucket = getContractsBucket();
+  const bucket = getR2Bucket();
 
   await getR2Client().send(
     new DeleteObjectCommand({
@@ -140,7 +87,7 @@ export async function deleteContractFile(key: string): Promise<void> {
 }
 
 export async function getContractFileDownloadUrl(key: string): Promise<string> {
-  const bucket = getContractsBucket();
+  const bucket = getR2Bucket();
   const command = new GetObjectCommand({
     Bucket: bucket,
     Key: key,

@@ -45,6 +45,7 @@ export default async function EditClientPage({ params }: EditClientPageProps) {
     status: item.status,
     paymentDate: item.paymentDate,
     paymentMethod: item.paymentMethod,
+    nfseStatus: item.nfseStatus,
   }));
 
   return (

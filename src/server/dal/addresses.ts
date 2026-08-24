@@ -162,3 +162,111 @@ export async function upsertPrimaryAddressForClient(
 
   return createAddress({ ...input, clientOwnerId: clientId }, tx);
 }
+
+type CreateIssuerAddressParams = AddressInput & {
+  issuerOwnerId: string;
+};
+
+export async function createIssuerAddress(
+  input: CreateIssuerAddressParams,
+  tx?: DbTransaction,
+): Promise<AddressRecord> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "issuers:manage")) {
+    throw new ForbiddenError();
+  }
+
+  const database = dbOrTx(tx);
+
+  const [row] = await database
+    .insert(addresses)
+    .values({
+      companyId: ctx.companyId,
+      ownerType: "issuer",
+      issuerOwnerId: input.issuerOwnerId,
+      type: input.type,
+      isPrimary: true,
+      street: input.street,
+      number: input.number,
+      complement: input.complement,
+      neighborhood: input.neighborhood,
+      city: input.city,
+      state: input.state,
+      country: input.country,
+      postalCode: input.postalCode,
+      codMunicipioIbge: input.codMunicipioIbge,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+    })
+    .returning();
+
+  return row;
+}
+
+export async function getPrimaryAddressForIssuer(
+  issuerId: string,
+): Promise<AddressRecord | null> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "issuers:read")) {
+    throw new ForbiddenError();
+  }
+
+  const row = await db.query.addresses.findFirst({
+    where: and(
+      eq(addresses.companyId, ctx.companyId),
+      eq(addresses.ownerType, "issuer"),
+      eq(addresses.issuerOwnerId, issuerId),
+      eq(addresses.isPrimary, true),
+    ),
+  });
+
+  return row ?? null;
+}
+
+export async function upsertPrimaryAddressForIssuer(
+  issuerId: string,
+  input: AddressInput,
+  tx?: DbTransaction,
+): Promise<AddressRecord> {
+  const ctx = await requireCompanyContext();
+  if (!can(ctx, "issuers:manage")) {
+    throw new ForbiddenError();
+  }
+
+  const database = dbOrTx(tx);
+
+  const existing = await database.query.addresses.findFirst({
+    where: and(
+      eq(addresses.companyId, ctx.companyId),
+      eq(addresses.ownerType, "issuer"),
+      eq(addresses.issuerOwnerId, issuerId),
+      eq(addresses.isPrimary, true),
+    ),
+  });
+
+  if (existing) {
+    const [row] = await database
+      .update(addresses)
+      .set({
+        street: input.street,
+        number: input.number,
+        complement: input.complement,
+        neighborhood: input.neighborhood,
+        city: input.city,
+        state: input.state,
+        country: input.country,
+        postalCode: input.postalCode,
+        codMunicipioIbge: input.codMunicipioIbge,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        type: input.type,
+        updatedAt: new Date(),
+      })
+      .where(eq(addresses.id, existing.id))
+      .returning();
+
+    return row!;
+  }
+
+  return createIssuerAddress({ ...input, issuerOwnerId: issuerId }, tx);
+}

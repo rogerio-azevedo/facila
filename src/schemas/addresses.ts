@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const digitsOnly = (value: string) => value.replace(/\D/g, "");
 
-export const addressOwnerTypeSchema = z.enum(["company", "client"]);
+export const addressOwnerTypeSchema = z.enum(["company", "client", "issuer"]);
 export const addressTypeSchema = z.enum(["main", "billing", "shipping"]);
 
 export const addressSchema = z

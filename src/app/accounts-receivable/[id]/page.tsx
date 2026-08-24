@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AccountReceivableNfseSection } from "@/components/accounts-receivable/account-receivable-nfse-section";
 import { AccountReceivableActions } from "@/components/accounts-receivable/account-receivable-actions";
 import { AccountReceivableForm } from "@/components/accounts-receivable/account-receivable-form";
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +15,7 @@ import {
 import { getAccountReceivableById } from "@/server/dal/accounts-receivable";
 import { listClientOptions } from "@/server/dal/clients";
 import { getContractById, listContractOptions } from "@/server/dal/contracts";
+import { listServiceInvoicesByAccountReceivable } from "@/server/dal/service-invoices";
 
 type AccountReceivableDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -44,10 +46,11 @@ export default async function AccountReceivableDetailPage({
     notFound();
   }
 
-  const [clients, contracts, linkedContract] = await Promise.all([
+  const [clients, contracts, linkedContract, invoices] = await Promise.all([
     listClientOptions(),
     listContractOptions(),
     receivable.contractId ? getContractById(receivable.contractId) : Promise.resolve(null),
+    listServiceInvoicesByAccountReceivable(receivable.id),
   ]);
 
   const isEditable = receivable.status === "pending";
@@ -91,6 +94,13 @@ export default async function AccountReceivableDetailPage({
           dueDate: toDateInputValue(receivable.dueDate),
           notes: receivable.notes ?? "",
         }}
+      />
+
+      <AccountReceivableNfseSection
+        accountReceivableId={receivable.id}
+        status={receivable.status}
+        nfseStatus={receivable.nfseStatus}
+        invoices={invoices}
       />
 
       <AccountReceivableActions

@@ -121,7 +121,7 @@ export function BatchBillingPanel({
       }
 
       setShowConfirm(false);
-      router.push("/accounts-receivable");
+      router.push(`/billing/${result.billingRunId}`);
       router.refresh();
     });
   };

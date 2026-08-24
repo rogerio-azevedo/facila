@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { AccountsReceivableFilters } from "@/components/accounts-receivable/accounts-receivable-filters";
+import { AccountsReceivableListPanel } from "@/components/accounts-receivable/accounts-receivable-list-panel";
 import { AccountsReceivablePagination } from "@/components/accounts-receivable/accounts-receivable-pagination";
-import { AccountsReceivableTable } from "@/components/accounts-receivable/accounts-receivable-table";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatCompetenceMonth } from "@/lib/billing";
@@ -58,6 +58,7 @@ export default async function AccountsReceivablePage({
     status: item.status,
     paymentDate: item.paymentDate,
     paymentMethod: item.paymentMethod,
+    nfseStatus: item.nfseStatus,
   }));
 
   return (
@@ -78,7 +79,7 @@ export default async function AccountsReceivablePage({
       />
 
       <AccountsReceivableFilters key={`${query.q}-${query.status}-${query.competenceMonth}`} query={query} />
-      <AccountsReceivableTable rows={rows} showClient />
+      <AccountsReceivableListPanel rows={rows} />
       <AccountsReceivablePagination query={query} total={total} />
     </div>
   );

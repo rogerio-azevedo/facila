@@ -3,11 +3,13 @@
 import {
   Building2Icon,
   ChevronUpIcon,
+  FactoryIcon,
   LayersIcon,
   ReceiptIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   LogOutIcon,
+  ReceiptTextIcon,
   ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
@@ -61,9 +63,19 @@ const navigation = {
       icon: FileTextIcon,
     },
     {
+      href: "/issuers",
+      label: "Emissores",
+      icon: FactoryIcon,
+    },
+    {
       href: "/accounts-receivable",
       label: "Contas a receber",
       icon: ReceiptIcon,
+    },
+    {
+      href: "/service-invoices",
+      label: "Notas Fiscais",
+      icon: ReceiptTextIcon,
     },
     {
       href: "/billing",

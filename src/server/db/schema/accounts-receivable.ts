@@ -14,6 +14,9 @@ import { billingRuns } from "./billing-runs";
 import { clients } from "./clients";
 import { companies } from "./companies";
 import { contracts } from "./contracts";
+import { issuerServiceProfiles } from "./issuer-service-profiles";
+import { issuers } from "./issuers";
+import { serviceInvoices } from "./service-invoices";
 
 export const accountReceivableStatusEnum = pgEnum("account_receivable_status", [
   "pending",
@@ -29,6 +32,15 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "credit_card",
   "debit_card",
   "other",
+]);
+
+export const accountReceivableNfseStatusEnum = pgEnum("account_receivable_nfse_status", [
+  "none",
+  "pending",
+  "authorized",
+  "rejected",
+  "error",
+  "canceled",
 ]);
 
 export const accountsReceivable = pgTable(
@@ -56,6 +68,16 @@ export const accountsReceivable = pgTable(
     paymentDate: date("payment_date", { mode: "date" }),
     paymentMethod: paymentMethodEnum("payment_method"),
     notes: text("notes"),
+    issuerId: uuid("issuer_id").references(() => issuers.id, { onDelete: "set null" }),
+    issuerServiceProfileId: uuid("issuer_service_profile_id").references(
+      () => issuerServiceProfiles.id,
+      { onDelete: "set null" },
+    ),
+    nfseStatus: accountReceivableNfseStatusEnum("nfse_status").notNull().default("none"),
+    activeServiceInvoiceId: uuid("active_service_invoice_id").references(
+      () => serviceInvoices.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
   },

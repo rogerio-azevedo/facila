@@ -1,0 +1,16 @@
+[
+  { "cnaePrefix": "6201", "nationalServiceCode": "010101", "label": "Desenvolvimento de software" },
+  { "cnaePrefix": "6202", "nationalServiceCode": "010601", "label": "Consultoria em TI" },
+  { "cnaePrefix": "6203", "nationalServiceCode": "010601", "label": "Gestão de TI" },
+  { "cnaePrefix": "6204", "nationalServiceCode": "010601", "label": "Consultoria em TI" },
+  { "cnaePrefix": "6209", "nationalServiceCode": "010701", "label": "Suporte técnico em informática" },
+  { "cnaePrefix": "6311", "nationalServiceCode": "010301", "label": "Processamento de dados" },
+  { "cnaePrefix": "6319", "nationalServiceCode": "010301", "label": "Processamento de dados" },
+  { "cnaePrefix": "9511", "nationalServiceCode": "140201", "label": "Assistência técnica" },
+  { "cnaePrefix": "9512", "nationalServiceCode": "140201", "label": "Assistência técnica" },
+  { "cnaePrefix": "9521", "nationalServiceCode": "140201", "label": "Reparação eletroeletrônicos" },
+  { "cnaePrefix": "8599", "nationalServiceCode": "080201", "label": "Ensino e treinamento" },
+  { "cnaePrefix": "7020", "nationalServiceCode": "170101", "label": "Consultoria empresarial" },
+  { "cnaePrefix": "6911", "nationalServiceCode": "210101", "label": "Serviços jurídicos" },
+  { "cnaePrefix": "7319", "nationalServiceCode": "170601", "label": "Publicidade" }
+]

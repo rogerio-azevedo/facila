@@ -12,6 +12,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:baseline": "node --env-file=.env scripts/db-baseline.mjs",
     "db:seed": "node --env-file=.env scripts/seed-super-admin.mjs",
+    "db:seed:reference": "node --env-file=.env scripts/seed-reference-data.mjs",
+    "db:fetch:cnae": "node scripts/fetch-cnae-codes.mjs",
+    "db:fetch:national-codes": "node scripts/fetch-national-service-codes.mjs",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
@@ -29,6 +32,7 @@
     "mapbox-gl": "^3.29.0",
     "next": "16.3.2",
     "next-auth": "^5.0.0-beta.32",
+    "open-nfse": "^0.10.1",
     "postgres": "^3.4.9",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",

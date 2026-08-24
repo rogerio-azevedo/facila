@@ -36,6 +36,20 @@
       "when": 1787416000000,
       "tag": "0004_accounts_receivable_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787418000000,
+      "tag": "0005_issuers_nfse",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787420000000,
+      "tag": "0006_issuer_service_profiles_tributacao",
+      "breakpoints": true
     }
   ]
 }
