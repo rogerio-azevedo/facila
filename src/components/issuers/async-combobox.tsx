@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import { searchNationalServiceCodesAction } from "@/actions/reference-data";
-
-import { ensureCnaeCodeAction, searchCnaeCodesAction, searchMunicipalitiesAction } from "@/actions/reference-data";
+import {
+  ensureCnaeCodeAction,
+  searchCnaeCodesAction,
+  searchMunicipalitiesAction,
+  searchNationalServiceCodesAction,
+} from "@/actions/reference-data";
 import { formatCnaeLine } from "@/lib/format-cnae";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +61,7 @@ function extractDigits(query: string) {
   return query.replace(/\D/g, "");
 }
 
-export function AsyncCombobox({
+function AsyncComboboxField({
   label,
   placeholder,
   value,
@@ -79,41 +82,37 @@ export function AsyncCombobox({
   const [manualError, setManualError] = useState<string | null>(null);
   const [creating, startCreate] = useTransition();
   const searchActionRef = useRef(searchAction);
-  searchActionRef.current = searchAction;
 
   useEffect(() => {
-    if (displayValue) {
-      setQuery(displayValue);
-    }
-  }, [displayValue]);
+    searchActionRef.current = searchAction;
+  }, [searchAction]);
+
+  const trimmedQuery = query.trim();
+  const skipSearch = Boolean(
+    value && displayValue && trimmedQuery === displayValue.trim(),
+  );
+  const searchEnabled = shouldSearch(query) && !skipSearch;
+  const visibleOptions = searchEnabled ? options : [];
+  const visibleSearched = searchEnabled && searched;
 
   useEffect(() => {
-    // Valor já selecionado — não buscar ao montar/atualizar displayValue.
-    if (value && displayValue && query.trim() === displayValue.trim()) {
-      setOptions([]);
-      setSearched(false);
+    if (!searchEnabled) {
       return;
     }
 
-    if (!shouldSearch(query)) {
-      setOptions([]);
-      setSearched(false);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
+    const timeout = window.setTimeout(() => {
       startTransition(async () => {
-        const results = await searchActionRef.current(query.trim());
+        const results = await searchActionRef.current(trimmedQuery);
         setOptions(results);
         setSearched(true);
       });
     }, 250);
 
-    return () => clearTimeout(timeout);
-  }, [query, value, displayValue]);
+    return () => window.clearTimeout(timeout);
+  }, [searchEnabled, trimmedQuery]);
 
   const canManualCreate =
-    manualCreate?.canCreate(query.trim(), options) && searched && !pending;
+    manualCreate?.canCreate(trimmedQuery, visibleOptions) && visibleSearched && !pending;
 
   function resetManualCreate() {
     setManualOpen(false);
@@ -156,7 +155,8 @@ export function AsyncCombobox({
     });
   }
 
-  const showDropdown = open && (options.length > 0 || (searched && !pending) || manualOpen);
+  const showDropdown =
+    open && (visibleOptions.length > 0 || (visibleSearched && !pending) || manualOpen);
 
   return (
     <div className="space-y-2">
@@ -167,6 +167,8 @@ export function AsyncCombobox({
           placeholder={placeholder}
           onChange={(event) => {
             setQuery(event.target.value);
+            setOptions([]);
+            setSearched(false);
             setOpen(true);
             resetManualCreate();
           }}
@@ -180,7 +182,7 @@ export function AsyncCombobox({
         />
         {showDropdown ? (
           <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md">
-            {options.map((option) => (
+            {visibleOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
@@ -198,18 +200,18 @@ export function AsyncCombobox({
               </button>
             ))}
 
-            {searched && !pending && options.length === 0 && !manualOpen ? (
+            {visibleSearched && !pending && visibleOptions.length === 0 && !manualOpen ? (
               <p className="px-2 py-1.5 text-sm text-muted-foreground">{emptyMessage}</p>
             ) : null}
 
-            {canManualCreate && !manualOpen ? (
+            {canManualCreate && manualCreate && !manualOpen ? (
               <button
                 type="button"
                 className="flex w-full rounded-sm px-2 py-1.5 text-left text-sm font-medium hover:bg-accent"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={handleStartManualCreate}
               >
-                {manualCreate.getCreateLabel(query.trim())}
+                {manualCreate.getCreateLabel(trimmedQuery)}
               </button>
             ) : null}
 
@@ -255,6 +257,15 @@ export function AsyncCombobox({
   );
 }
 
+export function AsyncCombobox(props: AsyncComboboxProps) {
+  return (
+    <AsyncComboboxField
+      key={`${props.value}\0${props.displayValue ?? ""}`}
+      {...props}
+    />
+  );
+}
+
 export async function searchMunicipalitiesCombobox(query: string): Promise<AsyncComboboxOption[]> {
   const rows = await searchMunicipalitiesAction({ q: query, limit: 20 });
   return rows.map((row) => ({
@@ -280,7 +291,7 @@ export async function searchNationalServiceCombobox(
     value: item.code,
     label: item.code,
     description: item.description,
-    nbsCode: item.nbsCode,
+    nbsCode: item.nbsCode ?? undefined,
   }));
 }
 
