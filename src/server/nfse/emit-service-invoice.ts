@@ -12,11 +12,12 @@ import {
   TipoAmbienteDps,
   TipoRetISSQN,
   TooManyRequestsError,
-  gerarDanfse,
   parseNfseXml,
   type BuildDpsParams,
   type NFSe,
 } from "open-nfse";
+
+import { generateModernDanfse } from "@/server/nfse/danfse-generator";
 
 import {
   getPrimaryAddressForClient,
@@ -57,14 +58,12 @@ import {
 } from "@/lib/nfse-normalize";
 import { parsePercent } from "@/lib/parse-percent";
 import {
-  normalizeMunicipalTaxCode,
   toXsdMunicipalTaxCode,
 } from "@/lib/normalize-municipal-tax-code";
-import { usesIssnetEmitter } from "@/lib/nfse-issnet";
+import { buildIbsCbsFromProfileNt009 } from "@/server/nfse/build-ibs-cbs";
 import { eq } from "drizzle-orm";
 import type { IssuerServiceProfileRecord } from "@/server/dal/issuer-service-profiles";
 import { emitDpsWithProfile } from "@/server/nfse/emit-dps-with-profile";
-import { cancelNfseViaIssnet } from "@/server/nfse/issnet-nfse";
 
 function mapOpSimpNac(value: string): OpcaoSimplesNacional {
   switch (value) {
@@ -243,7 +242,7 @@ async function persistAuthorizedInvoice(params: {
   nfseXml: string;
   nfse: NFSe;
 }) {
-  const danfseBuffer = await gerarDanfse(params.nfse);
+  const danfseBuffer = await generateModernDanfse(params.nfse);
 
   const [dpsXmlKey, nfseXmlKey, danfseKey] = await Promise.all([
     params.dpsXml
@@ -474,12 +473,25 @@ export async function emitServiceInvoiceForAccountReceivable(input: {
   const nfseClient = buildNfseClient(issuerDetail);
   const amount = Number(account.amount);
   const issRate = Number(profile.issRate);
-  const municipalTaxCode = usesIssnetEmitter(issuer.codMunicipioIbge)
-    ? normalizeMunicipalTaxCode(profile.municipalTaxCode)
-    : toXsdMunicipalTaxCode(profile.municipalTaxCode);
+  const municipalTaxCode = toXsdMunicipalTaxCode(profile.municipalTaxCode);
   const nbsCode = resolveEmissionNbsCode(profile.nbsCode, profile.nationalServiceCode);
   const pTotTribSn =
     issuer.opSimpNac === "3" ? parsePercent(profile.pTotTribSn) : undefined;
+
+  const layout = issuer.environment === "producao" ? ("nt004" as const) : ("nt009" as const);
+  const isSimplesNacSemRetencao =
+    issuer.opSimpNac === "3" &&
+    (!issuer.regApTribSn || issuer.regApTribSn === "1") &&
+    !profile.issRetained;
+  const aliqIss = isSimplesNacSemRetencao ? undefined : issRate;
+
+  // No Emissor Nacional (Sefin Nacional), o envio da Inscrição Municipal (<IM>) pelo prestador
+  // é rejeitado com E0120 quando o município não possui base complementar CNC NFS-e cadastrada.
+  // Como o padrão nacional identifica o prestador unicamente pelo CNPJ, omitimos a IM da DPS.
+  const inscricaoMunicipal = undefined;
+
+  const ibsCbs =
+    layout === "nt009" && nbsCode ? buildIbsCbsFromProfileNt009(profile) : undefined;
 
   const tomadorDocument = normalizeNfseDocument(clientRecord.document);
   if (!tomadorDocument) {
@@ -518,11 +530,12 @@ export async function emitServiceInvoiceForAccountReceivable(input: {
         };
 
   try {
-    const buildParams: BuildDpsParams = {
+    const buildParams = {
+      layout,
       emitente: {
         cnpj: issuer.cnpj,
         codMunicipio: issuer.codMunicipioIbge,
-        inscricaoMunicipal: issuer.municipalRegistration ?? undefined,
+        inscricaoMunicipal,
         email: issuer.email ?? undefined,
         fone: normalizeNfseFone(issuer.phone),
         regime: {
@@ -552,7 +565,7 @@ export async function emitServiceInvoiceForAccountReceivable(input: {
       },
       valores: {
         vServ: amount,
-        aliqIss: issRate,
+        ...(aliqIss !== undefined ? { aliqIss } : {}),
         tpRetISSQN: profile.issRetained
           ? TipoRetISSQN.RetidoPeloTomador
           : TipoRetISSQN.NaoRetido,
@@ -561,7 +574,8 @@ export async function emitServiceInvoiceForAccountReceivable(input: {
           : {}),
       },
       tomador,
-    };
+      ...(ibsCbs ? { ibsCbs } : {}),
+    } as BuildDpsParams;
 
     const nfseResult = await emitDpsWithProfile(nfseClient, buildParams, profile, {
       issuerId: issuer.id,
@@ -608,7 +622,7 @@ export async function emitServiceInvoiceForAccountReceivable(input: {
       shouldReleaseReservedDps(
         error,
         Boolean(persistPayload.chaveAcesso && persistPayload.xmlNfse),
-        usesIssnetEmitter(issuer.codMunicipioIbge),
+        false,
       )
     ) {
       await releaseReservedDpsNumber(issuer.id, dpsNumber);
@@ -668,26 +682,16 @@ export async function cancelServiceInvoice(input: {
     throw new Error("issuer-not-found");
   }
 
-  if (usesIssnetEmitter(issuer.codMunicipioIbge)) {
-    await cancelNfseViaIssnet({
-      issuerId: issuer.id,
-      environment: issuer.environment,
-      cnpj: issuer.cnpj,
-      chaveAcesso: invoice.accessKey,
-      reason: input.reason,
-    });
-  } else {
-    const client = buildNfseClient(issuer);
-    const result = await client.cancelar({
-      chaveAcesso: invoice.accessKey,
-      autor: { CNPJ: issuer.cnpj },
-      cMotivo: JustificativaCancelamento.Outros,
-      xMotivo: input.reason,
-    });
+  const client = buildNfseClient(issuer);
+  const result = await client.cancelar({
+    chaveAcesso: invoice.accessKey,
+    autor: { CNPJ: issuer.cnpj },
+    cMotivo: JustificativaCancelamento.Outros,
+    xMotivo: input.reason,
+  });
 
-    if (result.status === "retry_pending") {
-      throw new Error("cancel-retry-pending");
-    }
+  if (result.status === "retry_pending") {
+    throw new Error("cancel-retry-pending");
   }
 
   await db.transaction(async (tx) => {

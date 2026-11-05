@@ -230,7 +230,7 @@ export async function emitDpsViaIssnet(params: {
     : dps;
 
   const certificate = await new IssuerCertificateProvider(params.issuerId).load();
-  const unsignedXml = buildDpsXml(dpsWithIbsCbs, { includeXmlDeclaration: false });
+  const unsignedXml = buildDpsXml(dpsWithIbsCbs as unknown as Parameters<typeof buildDpsXml>[0], { includeXmlDeclaration: false });
   const xmlDpsAssinado = signDpsXml(unsignedXml, certificate);
   const endpoint = resolveIssnetEndpoint(params.environment);
   const response = await callIssnetSoap({

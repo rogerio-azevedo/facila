@@ -1,10 +1,8 @@
 import "server-only";
 
 import {
-  FinalidadeNFSe,
-  IndicadorDestinatario,
   IndicadorFinal,
-  type RtcInfoIbsCbs,
+  type IbsCbsInputNt009,
 } from "open-nfse";
 
 type ProfileIbsCbsFields = {
@@ -16,15 +14,23 @@ type ProfileIbsCbsFields = {
   indFinal: string | null;
 };
 
-export function buildIbsCbsFromProfile(profile: ProfileIbsCbsFields): RtcInfoIbsCbs {
+export function buildIbsCbsFromProfileNt009(profile: ProfileIbsCbsFields): IbsCbsInputNt009 {
   return {
-    finNFSe: FinalidadeNFSe.Regular,
+    classificacao: {
+      CST: profile.issqnCst ?? "000",
+      cClassTrib: profile.cClassTrib ?? "000001",
+    },
     indFinal: profile.indFinal === "1" ? IndicadorFinal.Sim : IndicadorFinal.Nao,
     cIndOp: profile.cIndOp ?? "050101",
-    indDest:
-      profile.indDest === "1"
-        ? IndicadorDestinatario.DestinatarioDistinto
-        : IndicadorDestinatario.TomadorEhDestinatario,
+  };
+}
+
+export function buildIbsCbsFromProfile(profile: ProfileIbsCbsFields): Record<string, unknown> {
+  return {
+    finNFSe: "0",
+    indFinal: profile.indFinal === "1" ? "1" : "0",
+    cIndOp: profile.cIndOp ?? "050101",
+    indDest: profile.indDest === "1" ? "1" : "0",
     valores: {
       trib: {
         gIBSCBS: {

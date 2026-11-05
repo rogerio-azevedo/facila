@@ -10,8 +10,10 @@ import { postgresRetryStore } from "@/server/nfse/retry-store";
 export function buildNfseClient(issuer: IssuerDetail): NfseClient {
   const ambiente =
     issuer.environment === "producao" ? Ambiente.Producao : Ambiente.ProducaoRestrita;
+  const layout = issuer.environment === "producao" ? "nt004" : "nt009";
 
   return new NfseClient({
+    layout,
     ambiente,
     certificado: new IssuerCertificateProvider(issuer.id),
     emitente: {
