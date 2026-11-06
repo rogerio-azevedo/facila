@@ -117,8 +117,7 @@ export async function generateModernDanfse(
 
   const isHomolog =
     options?.ambiente === "homologacao" ||
-    String(dps.tpAmb) === "2" ||
-    ("ambGer" in inf && String(inf.ambGer) === "2");
+    String(dps.tpAmb) === "2";
 
   const urlConsulta = isHomolog
     ? `https://hom.nfse.gov.br/consultapublica/?chave=${inf.chaveAcesso}`
