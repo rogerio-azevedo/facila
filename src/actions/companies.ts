@@ -1,13 +1,16 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { actAsCompanySchema, createCompanySchema } from "@/schemas/companies";
 import { userSchema } from "@/schemas/users";
 import { updateSession } from "@/server/auth";
 import { addMember, getMembership } from "@/server/dal/company-members";
 import { createCompany, getCompanyById } from "@/server/dal/companies";
+import { createInvitation } from "@/server/dal/company-invitations";
 import {
   ForbiddenError,
   requireAuthContext,
@@ -31,61 +34,103 @@ export async function createCompanyAction(input: unknown) {
   };
 
   const companyParsed = createCompanySchema.safeParse({ name: payload.name });
-  const adminParsed = userSchema.safeParse({
-    name: payload.adminName,
-    email: payload.adminEmail,
-    password: payload.adminPassword,
-  });
+  const rawPassword = typeof payload.adminPassword === "string" ? payload.adminPassword.trim() : "";
+  const hasPassword = rawPassword.length > 0;
 
-  if (!companyParsed.success || !adminParsed.success) {
-    const companyErrors = companyParsed.success ? {} : companyParsed.error.flatten().fieldErrors;
-    const adminErrors = adminParsed.success
-      ? {}
-      : {
-          adminName: adminParsed.error.flatten().fieldErrors.name,
-          adminEmail: adminParsed.error.flatten().fieldErrors.email,
-          adminPassword: adminParsed.error.flatten().fieldErrors.password,
-        };
+  let inviteUrl: string | undefined;
 
-    return { error: { ...companyErrors, ...adminErrors } };
-  }
+  if (hasPassword) {
+    const adminParsed = userSchema.safeParse({
+      name: payload.adminName,
+      email: payload.adminEmail,
+      password: payload.adminPassword,
+    });
 
-  await db.transaction(async (tx) => {
-    let user = await findUserByEmail(adminParsed.data.email, tx);
+    if (!companyParsed.success || !adminParsed.success) {
+      const companyErrors = companyParsed.success ? {} : companyParsed.error.flatten().fieldErrors;
+      const adminErrors = adminParsed.success
+        ? {}
+        : {
+            adminName: adminParsed.error.flatten().fieldErrors.name,
+            adminEmail: adminParsed.error.flatten().fieldErrors.email,
+            adminPassword: adminParsed.error.flatten().fieldErrors.password,
+          };
 
-    if (!user) {
-      user = await createUser(
-        {
-          ...adminParsed.data,
-          platformRole: isSuperAdminEmail(adminParsed.data.email) ? "super_admin" : "user",
-        },
-        tx,
-      );
+      return { error: { ...companyErrors, ...adminErrors } };
     }
 
-    const company = await createCompany(companyParsed.data, tx);
-    const existingMembership = await getMembership(user.id, company.id, tx);
+    await db.transaction(async (tx) => {
+      let user = await findUserByEmail(adminParsed.data.email, tx);
 
-    if (!existingMembership) {
-      await addMember(
+      if (!user) {
+        user = await createUser(
+          {
+            ...adminParsed.data,
+            platformRole: isSuperAdminEmail(adminParsed.data.email) ? "super_admin" : "user",
+          },
+          tx,
+        );
+      }
+
+      const company = await createCompany(companyParsed.data, tx);
+      const existingMembership = await getMembership(user.id, company.id, tx);
+
+      if (!existingMembership) {
+        await addMember(
+          {
+            companyId: company.id,
+            userId: user.id,
+            role: "admin",
+          },
+          tx,
+        );
+      }
+    });
+  } else {
+    // Modo convite de primeiro acesso (sem senha pré-definida)
+    const emailParsed = z
+      .string()
+      .email({ message: "E-mail inválido" })
+      .safeParse(payload.adminEmail);
+
+    if (!companyParsed.success || !emailParsed.success) {
+      return {
+        error: {
+          name: companyParsed.success ? undefined : companyParsed.error.flatten().fieldErrors.name,
+          adminEmail: emailParsed.success ? undefined : ["E-mail inválido"],
+        },
+      };
+    }
+
+    await db.transaction(async (tx) => {
+      const company = await createCompany(companyParsed.data, tx);
+      const token = crypto.randomBytes(24).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      const invitation = await createInvitation(
         {
           companyId: company.id,
-          userId: user.id,
+          email: emailParsed.data.toLowerCase(),
           role: "admin",
+          token,
+          invitedByUserId: ctx.userId,
+          expiresAt,
         },
         tx,
       );
-    }
-  });
+
+      inviteUrl = `/invite/${invitation.token}`;
+    });
+  }
 
   revalidatePath("/platform/companies");
-  return { success: true };
+  return { success: true, inviteUrl };
 }
 
 export async function createCompanyFormAction(
-  _prev: { error?: string; success?: boolean },
+  _prev: { error?: string; success?: boolean; inviteUrl?: string },
   formData: FormData,
-): Promise<{ error?: string; success?: boolean }> {
+): Promise<{ error?: string; success?: boolean; inviteUrl?: string }> {
   const result = await createCompanyAction({
     name: formData.get("name"),
     adminName: formData.get("adminName"),
@@ -94,10 +139,10 @@ export async function createCompanyFormAction(
   });
 
   if ("error" in result && result.error) {
-    return { error: "Dados inválidos" };
+    return { error: "Dados inválidos. Verifique os campos preenchidos." };
   }
 
-  return { success: true };
+  return { success: true, inviteUrl: result.inviteUrl };
 }
 
 export async function actAsCompanyAction(input: unknown) {

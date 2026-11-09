@@ -11,6 +11,7 @@ import {
   LogOutIcon,
   ReceiptTextIcon,
   ShieldCheckIcon,
+  UserCogIcon,
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -81,6 +82,11 @@ const navigation = {
       href: "/billing",
       label: "Faturamento",
       icon: LayersIcon,
+    },
+    {
+      href: "/users",
+      label: "Usuários",
+      icon: UserCogIcon,
     },
   ],
   platform: [

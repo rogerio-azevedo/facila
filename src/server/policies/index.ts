@@ -13,7 +13,10 @@ export type PolicyAction =
   | "billing-runs:manage"
   | "billing-runs:read"
   | "issuers:manage"
-  | "issuers:read";
+  | "issuers:read"
+  | "company-members:read"
+  | "company-members:manage"
+  | "company-invitations:manage";
 
 export function can(ctx: AppContext, action: PolicyAction): boolean {
   switch (action) {
@@ -22,6 +25,16 @@ export function can(ctx: AppContext, action: PolicyAction): boolean {
 
     case "platform:act-as":
       return ctx.kind === "platform" && ctx.role === "super_admin";
+
+    case "company-members:read":
+      return true;
+
+    case "company-members:manage":
+    case "company-invitations:manage":
+      if (ctx.kind === "platform") {
+        return ctx.role === "super_admin";
+      }
+      return ctx.role === "admin" || ctx.role === "super_admin";
 
     case "companies:manage":
       if (ctx.kind === "platform") {

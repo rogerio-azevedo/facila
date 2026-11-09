@@ -9,3 +9,15 @@ export const companyMemberSchema = z.object({
 });
 
 export type CompanyMemberInput = z.infer<typeof companyMemberSchema>;
+
+export const updateCompanyMemberRoleSchema = z.object({
+  memberId: z.uuid(),
+  role: companyMemberRoleSchema,
+});
+
+export const removeCompanyMemberSchema = z.object({
+  memberId: z.uuid(),
+});
+
+export type UpdateCompanyMemberRoleInput = z.infer<typeof updateCompanyMemberRoleSchema>;
+export type RemoveCompanyMemberInput = z.infer<typeof removeCompanyMemberSchema>;
