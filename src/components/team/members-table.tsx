@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontalIcon, ShieldCheckIcon, UserIcon, UserMinusIcon } from "lucide-react";
+import {
+  MoreHorizontalIcon,
+  ShieldCheckIcon,
+  UserIcon,
+  UserMinusIcon,
+  UserPenIcon,
+} from "lucide-react";
 
 import { removeCompanyMemberAction, updateCompanyMemberRoleAction } from "@/actions/company-members";
+import { EditUserDialog } from "@/components/team/edit-user-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +40,12 @@ type MembersTableProps = {
 export function MembersTable({ members, currentUserId, canManage }: MembersTableProps) {
   const [loadingMemberId, setLoadingMemberId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<{
+    id: string;
+    name: string | null;
+    email: string;
+  } | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   async function handleRoleChange(memberId: string, newRole: "admin" | "member") {
     setActionError(null);
@@ -151,6 +164,21 @@ export function MembersTable({ members, currentUserId, canManage }: MembersTable
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingUser({
+                                id: member.userId,
+                                name: member.userName,
+                                email: member.userEmail,
+                              });
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <UserPenIcon className="mr-2 h-4 w-4" />
+                            Editar usuário / Senha
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
                           <DropdownMenuLabel>Permissões</DropdownMenuLabel>
                           {member.role === "member" ? (
                             <DropdownMenuItem
@@ -187,7 +215,12 @@ export function MembersTable({ members, currentUserId, canManage }: MembersTable
           </TableBody>
         </Table>
       </div>
+
+      <EditUserDialog
+        user={editingUser}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </div>
   );
 }
-

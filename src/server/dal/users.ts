@@ -69,3 +69,30 @@ export async function registerSuperAdmin(input: UserInput) {
 
   return { user };
 }
+
+export async function getUserById(id: string, tx?: DbTransaction) {
+  return dbOrTx(tx).query.users.findFirst({
+    where: eq(users.id, id),
+  });
+}
+
+export async function updateUser(
+  id: string,
+  data: {
+    name?: string;
+    passwordHash?: string;
+  },
+  tx?: DbTransaction,
+) {
+  const updateData: { name?: string; passwordHash?: string } = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
+
+  const [updated] = await dbOrTx(tx)
+    .update(users)
+    .set(updateData)
+    .where(eq(users.id, id))
+    .returning();
+
+  return updated;
+}
