@@ -11,6 +11,6 @@
   { "cnaePrefix": "9521", "nationalServiceCode": "140201", "label": "Reparação eletroeletrônicos" },
   { "cnaePrefix": "8599", "nationalServiceCode": "080201", "label": "Ensino e treinamento" },
   { "cnaePrefix": "7020", "nationalServiceCode": "170101", "label": "Consultoria empresarial" },
-  { "cnaePrefix": "6911", "nationalServiceCode": "210101", "label": "Serviços jurídicos" },
+  { "cnaePrefix": "6911", "nationalServiceCode": "171401", "label": "Advocacia" },
   { "cnaePrefix": "7319", "nationalServiceCode": "170601", "label": "Publicidade" }
 ]

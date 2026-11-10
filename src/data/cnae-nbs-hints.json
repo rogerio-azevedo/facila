@@ -8,5 +8,10 @@
     "cnaePrefix": "9521",
     "nbsCode": "120018100",
     "label": "Manutenção e reparação de eletroeletrônicos domésticos"
+  },
+  {
+    "cnaePrefix": "6911",
+    "nbsCode": "113012000",
+    "label": "Serviços de representação e consultoria jurídica em outras áreas do direito"
   }
 ]
